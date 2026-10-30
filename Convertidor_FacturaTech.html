@@ -1335,9 +1335,154 @@ Santa Teresita, 18000000
       renderFacturas();
     };
 
-    window.toggleItem = function(fIdx, iIdx, checked) {
-      todasLasFacturas[fIdx].items[iIdx].activo = checked;
+
+    // ================= RECALCULAR PROPORCIONAL CON ITEMS ACTIVOS =================
+    window.recalcularFacturaProporcional = function(fIdx) {
+      const f = todasLasFacturas[fIdx];
+      if (!f) return;
+      if (!f.granTotalExcel || f.granTotalExcel <= 0) {
+        alert('Esta factura no tiene un valor objetivo registrado.');
+        return;
+      }
+      const valRaw = f.granTotalExcel;
+
+      // Índices de los ítems que quedaron activos
+      const indicesActivos = [];
+      f.items.forEach((it, idx) => {
+        if (it.activo) indicesActivos.push(idx);
+      });
+
+      if (indicesActivos.length === 0) {
+        alert('Debes dejar al menos un ítem activo para poder calcular la factura.');
+        return;
+      }
+
+      // 1. Calcular la suma base de los ítems activos usando la plantilla de referencia
+      let totalBaseActivos = 0;
+      indicesActivos.forEach(idx => {
+        const it = f.items[idx];
+        const baseRef = PLANTILLA_39_BASE.find(p => p.prefijo === it.prefijo && p.descripcion === it.descripcion) || { cantBase: 10 };
+        totalBaseActivos += calcularLinea(baseRef.cantBase, it.valorUnitario, it.ivaPct).total;
+      });
+
+      if (totalBaseActivos <= 0) totalBaseActivos = 1;
+      const factor = valRaw / totalBaseActivos;
+
+      // Escalar cantidades iniciales redondeadas a enteros
+      indicesActivos.forEach(idx => {
+        const it = f.items[idx];
+        const baseRef = PLANTILLA_39_BASE.find(p => p.prefijo === it.prefijo && p.descripcion === it.descripcion) || { cantBase: 10 };
+        it.cantidad = Math.max(1, Math.round(baseRef.cantBase * factor));
+      });
+
+      // Los inactivos quedan en 0
+      f.items.forEach(it => {
+        if (!it.activo) it.cantidad = 0;
+      });
+
+      // 2. Ordenar candidatos activos por precio unitario final para ajuste fino
+      const candidatosAjuste = indicesActivos.slice().sort((a, b) => {
+        const puA = f.items[a].valorUnitario * (1 + f.items[a].ivaPct / 100);
+        const puB = f.items[b].valorUnitario * (1 + f.items[b].ivaPct / 100);
+        return puA - puB;
+      });
+
+      // Iteraciones de ajuste por pasos
+      for (let iter = 0; iter < 500; iter++) {
+        const actual = calcularTotalItems(f.items);
+        const diff = valRaw - actual;
+        if (Math.abs(diff) < 100) break;
+
+        let mejorIdx = -1, mejorPaso = 0, menorErr = Math.abs(diff);
+        for (const idx of candidatosAjuste) {
+          const pu = f.items[idx].valorUnitario * (1 + f.items[idx].ivaPct / 100);
+          const paso = diff > 0 ? 1 : -1;
+          if (f.items[idx].cantidad + paso < 1) continue;
+
+          const err = Math.abs(diff - paso * pu);
+          if (err < menorErr) {
+            menorErr = err;
+            mejorIdx = idx;
+            mejorPaso = paso;
+          }
+        }
+        if (mejorIdx !== -1) {
+          f.items[mejorIdx].cantidad += mejorPaso;
+        } else {
+          break;
+        }
+      }
+
+      // 3. Ajuste combinatorio con los ítems activos más económicos
+      const actualPre = calcularTotalItems(f.items);
+      const rem = valRaw - actualPre;
+      if (Math.abs(rem) >= 1 && Math.abs(rem) <= 25000 && candidatosAjuste.length >= 2) {
+        const bajos = candidatosAjuste.slice(0, 4);
+        let bestDelta = null;
+        let bestErr = Math.abs(rem);
+
+        for (let d0 = -8; d0 <= 8; d0++) {
+          if (f.items[bajos[0]].cantidad + d0 < 1) continue;
+          const p0 = f.items[bajos[0]].valorUnitario * (1 + f.items[bajos[0]].ivaPct / 100);
+          for (let d1 = -6; d1 <= 6; d1++) {
+            if (f.items[bajos[1]].cantidad + d1 < 1) continue;
+            const p1 = f.items[bajos[1]].valorUnitario * (1 + f.items[bajos[1]].ivaPct / 100);
+
+            if (bajos.length >= 3) {
+              for (let d2 = -6; d2 <= 6; d2++) {
+                if (f.items[bajos[2]].cantidad + d2 < 1) continue;
+                const p2 = f.items[bajos[2]].valorUnitario * (1 + f.items[bajos[2]].ivaPct / 100);
+                const sub = d0 * p0 + d1 * p1 + d2 * p2;
+                const falta = rem - sub;
+
+                if (bajos.length >= 4) {
+                  const p3 = f.items[bajos[3]].valorUnitario * (1 + f.items[bajos[3]].ivaPct / 100);
+                  const d3 = Math.round(falta / p3);
+                  if (Math.abs(d3) <= 10 && f.items[bajos[3]].cantidad + d3 >= 1) {
+                    const err = Math.abs(rem - (sub + d3 * p3));
+                    if (err < bestErr) {
+                      bestErr = err;
+                      bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1, [bajos[2]]: d2, [bajos[3]]: d3 };
+                    }
+                  }
+                } else {
+                  const err = Math.abs(rem - sub);
+                  if (err < bestErr) {
+                    bestErr = err;
+                    bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1, [bajos[2]]: d2 };
+                  }
+                }
+              }
+            } else {
+              const sub = d0 * p0 + d1 * p1;
+              const err = Math.abs(rem - sub);
+              if (err < bestErr) {
+                bestErr = err;
+                bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1 };
+              }
+            }
+          }
+        }
+
+        if (bestDelta) {
+          for (const [idxStr, delta] of Object.entries(bestDelta)) {
+            f.items[Number(idxStr)].cantidad += delta;
+          }
+        }
+      }
+
+      // Guardar y renderizar
+      guardarFacturaEnHistorial(f);
       renderFacturas();
+    };
+
+    window.toggleItem = function(fIdx, iIdx, checked, autoRecalcular = false) {
+      todasLasFacturas[fIdx].items[iIdx].activo = checked;
+      if (autoRecalcular && todasLasFacturas[fIdx].granTotalExcel) {
+        recalcularFacturaProporcional(fIdx);
+      } else {
+        renderFacturas();
+      }
     };
 
     window.cambiarCantidad = function(fIdx, iIdx, val) {
@@ -1373,6 +1518,7 @@ Santa Teresita, 18000000
             </div>
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
               ${f.granTotalExcel ? `<span class="badge ${Math.abs(dif) <= 500 ? 'badge-ok' : 'badge-warn'}">Objetivo: $${f.granTotalExcel.toLocaleString('es-CO')} (Dif: $${dif.toLocaleString('es-CO')})</span>` : ''}
+              ${f.granTotalExcel ? `<button type="button" class="btn" style="padding:5px 12px; font-size:12px; background:#4f46e5;" onclick="recalcularFacturaProporcional(${fIdx})" title="Ajusta y cuadra automáticamente los ítems que quedaron activos para alcanzar el valor objetivo">🔄 Recalcular con Ítems Activos</button>` : ''}
               <strong style="font-size:15px;">Total: $${tot.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
               <button type="button" class="btn-sec" onclick="descargarUnaFactura(${fIdx})">⬇ CSV Individual</button> <button type="button" class="btn-danger" onclick="eliminarFactura(${fIdx})">🗑 Eliminar</button>
             </div>
