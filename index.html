@@ -1246,16 +1246,23 @@ Santa Teresita, 18000000
         granTotalExcel = null;
       };
 
-      for (const row of rows) {
-        if (!row || !row.length) continue;
-        const vals = row.map(x => x !== null && x !== undefined ? String(x).trim() : '');
+      for (const rawRow of rows) {
+        if (!rawRow || !rawRow.length) continue;
+        
+        // Convertir sparse array a dense array seguro sin huecos ni undefined
+        const vals = [];
+        for (let i = 0; i < rawRow.length; i++) {
+          const cell = rawRow[i];
+          vals.push((cell === null || cell === undefined) ? '' : String(cell).trim());
+        }
+
         const textoFila = vals.join(' ').trim().toUpperCase();
         if (!textoFila) continue;
 
         // 1. Cliente
-        const idxCliente = vals.findIndex(x => x.toUpperCase().includes('CLIENTE'));
+        const idxCliente = vals.findIndex(x => (x || '').toUpperCase().includes('CLIENTE'));
         if (idxCliente !== -1 && idxCliente <= 5) {
-          const resto = vals.slice(idxCliente + 1).filter(x => x !== '');
+          const resto = vals.slice(idxCliente + 1).filter(x => (x || '') !== '');
           if (resto.length > 0) {
             if (itemsActuales.length > 0) guardarSiHay();
             enItems = false;
@@ -1274,7 +1281,7 @@ Santa Teresita, 18000000
         }
 
         // 3. Contrato
-        const idxContrato = vals.findIndex(x => x.toUpperCase().startsWith('CONTRATO'));
+        const idxContrato = vals.findIndex(x => (x || '').toUpperCase().startsWith('CONTRATO'));
         if (idxContrato !== -1) {
           if (itemsActuales.length > 0) guardarSiHay();
           contratoActual = vals[idxContrato];
@@ -1283,7 +1290,7 @@ Santa Teresita, 18000000
         }
 
         // 4. Encabezado de productos (ALIMENTO, PRODUCTO, DESCRIPCION)
-        const idxAlim = vals.findIndex(x => ['ALIMENTO', 'PRODUCTO', 'DESCRIPCION', 'DETALLE'].includes(x.toUpperCase()));
+        const idxAlim = vals.findIndex(x => ['ALIMENTO', 'PRODUCTO', 'DESCRIPCION', 'DETALLE'].includes((x || '').toUpperCase()));
         if (idxAlim !== -1) {
           colAlimento = idxAlim;
           colUnidad = -1;
@@ -1292,7 +1299,7 @@ Santa Teresita, 18000000
           colIva = -1;
 
           for (let c = idxAlim + 1; c < vals.length; c++) {
-            const h = vals[c].toUpperCase();
+            const h = (vals[c] || '').toUpperCase();
             if (h.includes('UNIDAD') || h.includes('MEDIDA')) {
               colUnidad = c;
             } else if (h.includes('CANT')) {
@@ -1324,7 +1331,7 @@ Santa Teresita, 18000000
         // 6. Extracción de ítems
         if (enItems && colAlimento !== -1) {
           const nombreProd = vals[colAlimento] || '';
-          if (!nombreProd || nombreProd.toUpperCase().includes('GRAN TOTAL') || nombreProd.toUpperCase().includes('TOTAL')) continue;
+          if (!nombreProd || (nombreProd || '').toUpperCase().includes('GRAN TOTAL') || (nombreProd || '').toUpperCase().includes('TOTAL')) continue;
 
           let cant = colCantidad < vals.length ? limpiarNumero(vals[colCantidad]) : 0;
           let vUnit = colVunit < vals.length ? limpiarNumero(vals[colVunit]) : 0;
