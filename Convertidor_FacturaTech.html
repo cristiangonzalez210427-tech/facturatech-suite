@@ -129,8 +129,33 @@
     }
   </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
+
+  <!-- ================= MODAL PEGAR LOTE DE ASOCIACIONES ================= -->
+  <div id="modalPegarLote" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:99990; align-items:center; justify-content:center; padding:15px;">
+    <div style="background:#fff; border-radius:16px; width:100%; max-width:580px; padding:26px; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a;">⚡ Cargar Lote de Facturas Proporcionales</h3>
+        <button type="button" onclick="cerrarModalPegarLote()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#64748b;">✕</button>
+      </div>
+      <p style="font-size:12.5px; color:#475569; margin:0 0 14px; line-height:1.4;">
+        Pega abajo el listado de tus asociaciones y valores. Puedes copiar directo de Excel. Formato: <strong>Nombre o NIT, Valor Objetivo</strong> (uno por línea).
+      </p>
+      <textarea id="txtLoteValores" style="width:100%; height:160px; font-family:monospace; font-size:13px; margin-bottom:14px;" placeholder="Ejemplo:
+Fundacion Sin Barrera, 24500000
+Chaparral, 11200000
+Santa Teresita, 18000000
+901753677, 16979205"></textarea>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button type="button" class="btn-sec" onclick="cerrarModalPegarLote()">Cancelar</button>
+        <button type="button" class="btn-ok" onclick="procesarLoteValoresPegados()">Calcular Todas las Facturas ➔</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= PANTALLA DE SEGURIDAD / LOGIN ================= -->
   <div id="loginScreen" style="position:fixed; inset:0; background:rgba(15,23,42,0.96); backdrop-filter:blur(8px); z-index:99999; display:flex; align-items:center; justify-content:center; padding:15px;">
     <div style="background:#fff; border-radius:18px; width:100%; max-width:420px; padding:34px 28px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); text-align:center;">
@@ -234,7 +259,8 @@
             <input type="text" id="propContrato" placeholder="Ej: CONTRATO 1075" />
           </div>
           <div>
-            <button type="button" class="btn" style="width:100%; justify-content:center;" onclick="agregarFacturaProporcional()">+ Calcular Proporcional</button>
+            <button type="button" class="btn" style="width:100%; justify-content:center;" onclick="agregarFacturaProporcional()">+ Calcular 1 Proporcional</button>
+            <button type="button" class="btn-sec" style="width:100%; justify-content:center; margin-top:4px; font-size:11.5px;" onclick="abrirModalPegarLote()">⚡ Pegar Lote de Valores (Varios Clientes)</button>
           </div>
         </div>
       </div>
@@ -264,7 +290,8 @@
             <div style="font-size:12px; color:#94a3b8;">Todas se guardan automáticamente en tu Historial al descargar o generar Paz y Salvo.</div>
           </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button type="button" class="btn" onclick="descargarGuardarTodoCSV()">⬇ Guardar y Descargar CSV FacturaTech (Todas)</button>
+            <button type="button" class="btn" onclick="descargarGuardarTodoCSV()">⬇ Descargar CSV FacturaTech (Todas en 1 Solo Archivo)</button>
+            <button type="button" class="btn-sec" onclick="descargarTodasEnZip()">📦 Descargar en ZIP (Archivos Separados)</button>
             <button type="button" class="btn-ok" onclick="enviarLoteAPazYSalvo()">📄 Generar Paz y Salvo de estas Facturas</button>
             <button type="button" class="btn-sec" onclick="limpiarMesaFacturas()">Limpiar Mesa</button>
           </div>
@@ -1177,6 +1204,90 @@
       a.href = url; a.download = nombre; a.click();
       URL.revokeObjectURL(url);
     }
+
+
+    // --- LOTE RAPIDO DE FACTURAS PROPORCIONALES ---
+    window.abrirModalPegarLote = function() {
+      document.getElementById('modalPegarLote').style.display = 'flex';
+    };
+
+    window.cerrarModalPegarLote = function() {
+      document.getElementById('modalPegarLote').style.display = 'none';
+    };
+
+    window.procesarLoteValoresPegados = function() {
+      const raw = document.getElementById('txtLoteValores').value.trim();
+      if (!raw) return;
+
+      const lineas = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      let creadas = 0;
+
+      lineas.forEach(linea => {
+        // Separadores: coma, punto y coma, tabulador o dos espacios
+        const partes = linea.split(/[,;\t]+/).map(p => p.trim());
+        if (partes.length >= 2) {
+          const clienteOrNit = partes[0];
+          const valorLimpio = partes[1].replace(/[^0-9]/g, '');
+          const valNum = Number(valorLimpio);
+          const contrato = partes[2] || '';
+
+          if (valNum > 0) {
+            // Buscar NIT en el directorio si pasaron el nombre
+            let nitFinal = clienteOrNit;
+            if (!/^[0-9]+$/.test(clienteOrNit)) {
+              const busq = clienteOrNit.toUpperCase();
+              for (const [nit, nom] of Object.entries(DIRECTORIO_EMPRESAS)) {
+                if (nom.toUpperCase().includes(busq)) {
+                  nitFinal = nit;
+                  break;
+                }
+              }
+            }
+            const fac = construirFacturaProporcional(nitFinal, valNum, contrato);
+            todasLasFacturas.push(fac);
+            guardarFacturaEnHistorial(fac);
+            creadas++;
+          }
+        }
+      });
+
+      if (creadas > 0) {
+        renderFacturas();
+        cerrarModalPegarLote();
+        document.getElementById('txtLoteValores').value = '';
+        alert(`¡Se crearon ${creadas} facturas proporcionales en la mesa de trabajo!`);
+      } else {
+        alert('No se encontraron líneas válidas. Formato: Nombre, Valor');
+      }
+    };
+
+    // --- DESCARGAR TODAS EN ARCHIVO ZIP ---
+    window.descargarTodasEnZip = async function() {
+      if (!todasLasFacturas.length) {
+        alert('No hay facturas en la mesa de trabajo.');
+        return;
+      }
+      if (typeof JSZip === 'undefined') {
+        alert('Cargando módulo ZIP, intenta de nuevo en un segundo.');
+        return;
+      }
+      const zip = new JSZip();
+      const fecha = document.getElementById('fechaVenc').value;
+
+      todasLasFacturas.forEach((fac, idx) => {
+        const csv = generarCSVFacturatech([fac], fecha);
+        const nom = (fac.contrato || fac.empresa || fac.nit).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 40);
+        zip.file(`Factura_${idx + 1}_${nom}.csv`, csv);
+      });
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Facturas_FacturaTech_Separadas_${fecha}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
 
     window.descargarGuardarTodoCSV = function() {
       if (!todasLasFacturas.length) return;
