@@ -416,7 +416,7 @@ Santa Teresita, 18000000
             <div style="font-size:12px; color:#94a3b8;">Todas se guardan automáticamente en tu Historial al descargar o generar Paz y Salvo.</div>
           </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button type="button" class="btn" onclick="descargarGuardarTodoCSV()">⬇ Descargar CSV FacturaTech (Todas en 1 Solo Archivo)</button>
+            <button type="button" class="btn" id="btnDescargarTodoCSV" onclick="descargarGuardarTodoCSV()">⬇ Descargar CSV FacturaTech</button>
             <button type="button" class="btn-sec" onclick="descargarTodasEnZip()">📦 Descargar en ZIP (Archivos Separados)</button>
             <button type="button" class="btn-ok" onclick="enviarLoteAPazYSalvo()">📄 Generar Paz y Salvo de estas Facturas</button>
             <button type="button" class="btn-sec" onclick="limpiarMesaFacturas()">Limpiar Mesa</button>
@@ -1945,7 +1945,75 @@ function extraerFacturas(rows, origen) {
       }
     };
 
-    // --- DESCARGAR TODAS EN ARCHIVO ZIP ---
+    // ================= FUNCIONES DE IDENTIFICACIÓN CLARA DE ASOCIACIÓN =================
+    function obtenerNombreLimpioAsociacion(fac) {
+      const nit = fac.nit || '';
+      let nombre = (fac.cliente || DIRECTORIO_EMPRESAS[nit] || '').toUpperCase();
+      
+      // Limpiar prefijos largos para dejar el nombre distintivo de la asociación
+      let corto = nombre
+        .replace(/ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR /g, '')
+        .replace(/ASOCIACION DE MADRES COMUNITARIAS Y PADRES USUARIOS DE HOGARES DE BIENESTAR /g, '')
+        .replace(/ASOCIACION DE USUARIOS DEL PROGRAMA HOGARES DE BIENESTAR /g, '')
+        .replace(/ASOCIACION DE PADRES USUARIOS DE LOS HOGARES DE BIENESTAR /g, '')
+        .replace(/ASOCIACION DE PADRES USUARIOS DE HOGARES DE BIENESTAR /g, '')
+        .replace(/ASOCIACION DE PADRES DE HOGARES COMUNITARIOS DE BIENESTAR /g, '')
+        .replace(/ASOCIACION DE PADRES DE HOGARES DE BIENESTAR /g, '')
+        .replace(/ASOCIACION DE PADRES DE FAMILIA /g, '')
+        .replace(/ASOCIACION DE PADRES /g, '')
+        .replace(/ASOCIACION /g, '')
+        .replace(/FUNDACION /g, '')
+        .trim();
+
+      if (!corto) corto = nombre ? nombre.substring(0, 25) : `NIT_${nit}`;
+      return corto.replace(/[^A-Z0-9áéíóúÁÉÍÓÚñÑ]+/gi, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').substring(0, 32);
+    }
+
+    function obtenerNombreArchivoFactura(fac, fecha) {
+      const nit = fac.nit || 'NIT';
+      const asoc = obtenerNombreLimpioAsociacion(fac);
+      
+      let detalle = '';
+      const contraUpper = (fac.contrato || '').toUpperCase();
+      if (fac.tipoCanasta === 'rpp' || contraUpper.includes('RPP')) {
+        detalle = 'RPP_113_PAQ';
+      } else if (fac.tipoCanasta === 'refrigerios_1075' || contraUpper.includes('1075')) {
+        detalle = 'REFRI_1075_LA_MESA';
+      } else if (fac.tipoCanasta === 'refrigerios_1077' || contraUpper.includes('1077')) {
+        detalle = 'REFRI_1077_GIRARDOT';
+      } else if (contraUpper.includes('REFRIS') || contraUpper.includes('REFRIGERIO')) {
+        detalle = 'REFRIGERIOS';
+      } else if (contraUpper.includes('COSECHA')) {
+        detalle = 'COSECHA';
+      } else if (contraUpper.includes('ACAP')) {
+        detalle = 'ACAP';
+      } else if (fac.tipoCanasta === 'solo_carnes') {
+        detalle = 'CARNES';
+      } else if (fac.tipoCanasta === 'sin_huevos') {
+        detalle = 'SIN_HUEVOS';
+      } else if (fac.tipoCanasta === 'sin_arepas') {
+        detalle = 'SIN_AREPAS';
+      } else {
+        detalle = (fac.contrato || 'FACTURA')
+          .replace(/PROPORCIONAL/gi, '')
+          .replace(/[^A-Z0-9]+/gi, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '')
+          .substring(0, 20);
+      }
+      
+      const partes = [
+        'FacturaTech',
+        asoc,
+        `NIT_${nit}`,
+        detalle,
+        fecha || ''
+      ].filter(Boolean);
+
+      return partes.join('_').replace(/__+/g, '_') + '.csv';
+    }
+
+    // --- DESCARGAR TODAS EN ARCHIVO ZIP CON NOMBRES CLAROS POR ASOCIACIÓN ---
     window.descargarTodasEnZip = async function() {
       if (!todasLasFacturas.length) {
         alert('No hay facturas en la mesa de trabajo.');
@@ -1960,27 +2028,50 @@ function extraerFacturas(rows, origen) {
 
       todasLasFacturas.forEach((fac, idx) => {
         const csv = generarCSVFacturatech([fac], fecha);
-        const nom = (fac.contrato || fac.empresa || fac.nit).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 40);
-        zip.file(`Factura_${idx + 1}_${nom}.csv`, csv);
+        const fileName = `${idx + 1}_${obtenerNombreArchivoFactura(fac, fecha)}`;
+        zip.file(fileName, csv);
       });
+
+      const nitsUnicos = [...new Set(todasLasFacturas.map(f => f.nit))];
+      let zipName = '';
+      if (nitsUnicos.length === 1) {
+        const asoc = obtenerNombreLimpioAsociacion(todasLasFacturas[0]);
+        zipName = `Facturas_ZIP_${asoc}_NIT_${nitsUnicos[0]}_${fecha}.zip`;
+      } else {
+        zipName = `Facturas_ZIP_LOTE_(${todasLasFacturas.length}_Asociaciones)_${fecha}.zip`;
+      }
 
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Facturas_FacturaTech_Separadas_${fecha}.zip`;
+      a.download = zipName;
       a.click();
       URL.revokeObjectURL(url);
     };
 
+    // --- DESCARGAR ARCHIVO CSV CON NOMBRE IDENTIFICABLE DE LA ASOCIACIÓN ---
     window.descargarGuardarTodoCSV = function() {
       if (!todasLasFacturas.length) return;
       const fecha = document.getElementById('fechaVenc').value;
       const csv = generarCSVFacturatech(todasLasFacturas, fecha);
-      descargarArchivoTexto(csv, `Facturas_FacturaTech_${fecha}.csv`);
+      
+      let nombreArchivo = '';
+      if (todasLasFacturas.length === 1) {
+        nombreArchivo = obtenerNombreArchivoFactura(todasLasFacturas[0], fecha);
+      } else {
+        const nitsUnicos = [...new Set(todasLasFacturas.map(f => f.nit))];
+        if (nitsUnicos.length === 1) {
+          const asoc = obtenerNombreLimpioAsociacion(todasLasFacturas[0]);
+          nombreArchivo = `Facturas_FacturaTech_${asoc}_NIT_${nitsUnicos[0]}_(${todasLasFacturas.length}_Facturas)_${fecha}.csv`;
+        } else {
+          nombreArchivo = `Facturas_FacturaTech_LOTE_(${todasLasFacturas.length}_Asociaciones)_${fecha}.csv`;
+        }
+      }
+      descargarArchivoTexto(csv, nombreArchivo);
     };
 
-        window.eliminarFactura = function(fIdx) {
+    window.eliminarFactura = function(fIdx) {
       if (confirm('¿Deseas eliminar esta factura de la mesa de trabajo?')) {
         todasLasFacturas.splice(fIdx, 1);
         renderFacturas();
@@ -2007,11 +2098,13 @@ function extraerFacturas(rows, origen) {
       }
     };
 
+    // --- DESCARGAR 1 FACTURA INDIVIDUAL CON NOMBRE DE SU ASOCIACIÓN ---
     window.descargarUnaFactura = function(fIdx) {
       const f = todasLasFacturas[fIdx];
+      if (!f) return;
       const fecha = document.getElementById('fechaVenc').value;
-      const nombre = (f.contrato || f.nit).replace(/[^a-zA-Z0-9_-]/g, '_');
-      descargarArchivoTexto(generarCSVFacturatech([f], fecha), `Factura_${nombre}_facturatech.csv`);
+      const nombreArchivo = obtenerNombreArchivoFactura(f, fecha);
+      descargarArchivoTexto(generarCSVFacturatech([f], fecha), nombreArchivo);
     };
 
     window.limpiarMesaFacturas = function() {
@@ -2180,6 +2273,22 @@ function extraerFacturas(rows, origen) {
       barra.style.display = todasLasFacturas.length ? 'block' : 'none';
       if (!todasLasFacturas.length) { cont.innerHTML = ''; return; }
 
+      const btnDescargarTodo = document.getElementById('btnDescargarTodoCSV');
+      if (btnDescargarTodo) {
+        if (todasLasFacturas.length === 1) {
+          const asoc = obtenerNombreLimpioAsociacion(todasLasFacturas[0]);
+          btnDescargarTodo.textContent = `⬇ Descargar CSV FacturaTech (${asoc})`;
+        } else {
+          const nitsUnicos = [...new Set(todasLasFacturas.map(f => f.nit))];
+          if (nitsUnicos.length === 1) {
+            const asoc = obtenerNombreLimpioAsociacion(todasLasFacturas[0]);
+            btnDescargarTodo.textContent = `⬇ Descargar CSV FacturaTech (${asoc} - ${todasLasFacturas.length} Facturas)`;
+          } else {
+            btnDescargarTodo.textContent = `⬇ Descargar CSV FacturaTech (${todasLasFacturas.length} Asociaciones)`;
+          }
+        }
+      }
+
       let sumaGlobal = 0;
       let html = '';
       todasLasFacturas.forEach((f, fIdx) => {
@@ -2204,7 +2313,7 @@ function extraerFacturas(rows, origen) {
               ${f.granTotalExcel ? `<span class="badge ${Math.abs(dif) <= 500 ? 'badge-ok' : 'badge-warn'}">Objetivo: $${f.granTotalExcel.toLocaleString('es-CO')} (Dif: $${dif.toLocaleString('es-CO')})</span>` : ''}
               ${f.granTotalExcel ? `<button type="button" class="btn" style="padding:5px 12px; font-size:12px; background:#4f46e5;" onclick="recalcularFacturaProporcional(${fIdx})" title="Ajusta y cuadra automáticamente los ítems que quedaron activos para alcanzar el valor objetivo">🔄 Recalcular con Ítems Activos</button>` : ''}
               <strong style="font-size:15px;">Total: $${tot.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
-              <button type="button" class="btn-sec" onclick="descargarUnaFactura(${fIdx})">⬇ CSV Individual</button> <button type="button" class="btn-danger" onclick="eliminarFactura(${fIdx})">🗑 Eliminar</button>
+              <button type="button" class="btn-sec" onclick="descargarUnaFactura(${fIdx})" title="Descargar archivo CSV de esta asociación: ${f.cliente}">⬇ CSV (${obtenerNombreLimpioAsociacion(f)})</button> <button type="button" class="btn-danger" onclick="eliminarFactura(${fIdx})">🗑 Eliminar</button>
             </div>
           </div>
           <table>
@@ -2377,7 +2486,18 @@ function extraerFacturas(rows, origen) {
         'LGC', d.fechaEmision, `${d.facturaId} ${d.nit}`, d.nombreEmpresa, d.nit,
         d.mes, d.sumaLetras, d.valorFormatted, d.facturaId, d.cantidad, d.valorFormatted, d.valorFormatted
       ].join(';'));
-      descargarArchivoTexto([header, ...rows].join('\r\n'), 'Plantilla_PazYSalvo_Lote.csv');
+      let nombrePys = 'Plantilla_PazYSalvo_Lote.csv';
+      if (listaPazYSalvos.length === 1) {
+        const p = listaPazYSalvos[0];
+        const nomLimpio = (p.nombreEmpresa || '').toUpperCase()
+          .replace(/ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR /g, '')
+          .replace(/ASOCIACION DE PADRES /g, '')
+          .replace(/ASOCIACION /g, '')
+          .replace(/FUNDACION /g, '')
+          .replace(/[^A-Z0-9]+/gi, '_').replace(/_+/g, '_').substring(0, 25);
+        nombrePys = `PazYSalvo_${nomLimpio}_NIT_${p.nit}_${p.mes || 'OCTUBRE'}.csv`;
+      }
+      descargarArchivoTexto([header, ...rows].join('\r\n'), nombrePys);
     };
 
     // --- HISTORIAL ---
@@ -2409,13 +2529,21 @@ function extraerFacturas(rows, origen) {
           <td>${h.contrato}</td>
           <td class="num"><strong>$${Number(h.total).toLocaleString('es-CO', { maximumFractionDigits: 2 })}</strong></td>
           <td>
-            ${h.facturaData ? `<button type="button" class="btn-sec" onclick="reabrirFacturaHistorial('${h.id}')">Reabrir / CSV</button>` : ''}
+            ${h.facturaData ? `<button type="button" class="btn-sec" onclick="descargarDirectoDesdeHistorial('${h.id}')" title="Descargar archivo CSV de ${h.cliente}">⬇ CSV</button> <button type="button" class="btn-sec" onclick="reabrirFacturaHistorial('${h.id}')">Editar</button>` : ''}
             <button type="button" class="btn-ok" onclick="crearPysDesdeHistorial('${h.id}')">Paz y Salvo</button> <button type="button" class="btn-danger" onclick="eliminarRegistroHistorial('${h.id}')" title="Borrar registro">🗑 Eliminar</button>
           </td>
         </tr>`;
       });
       html += '</tbody></table>';
       cont.innerHTML = html;
+    };
+
+    window.descargarDirectoDesdeHistorial = function(id) {
+      const reg = historialGuardado.find(x => String(x.id) === String(id));
+      if (!reg || !reg.facturaData) return;
+      const fecha = document.getElementById('fechaVenc').value;
+      const nom = obtenerNombreArchivoFactura(reg.facturaData, fecha);
+      descargarArchivoTexto(generarCSVFacturatech([reg.facturaData], fecha), nom);
     };
 
     window.reabrirFacturaHistorial = function(id) {
