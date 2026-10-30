@@ -264,6 +264,7 @@ Santa Teresita, 18000000
               <option value="refrigerios_sin_barrera">🥤 Refrigerios Sin Barrera (Leche, Yogurt, Pan, Queso, Frutas)</option>
               <option value="refrigerios_lumed">🥤 Refrigerios LUMED (Leche, Huevos, Pan)</option>
               <option value="refrigerios_base">🥤 Refrigerios General (Bebida láctea, Panadería, Fruta, Huevo)</option>
+              <option value="rpp">📦 RPP (Ración para Preparar - Arroz, Huevos, Leche, Pasta, Harina, Lenteja)</option>
             </select>
           </div>
           <div>
@@ -501,6 +502,14 @@ Santa Teresita, 18000000
         { prefijo: 'LEC', descripcion: 'LECHE UHT LARGA VIDA X 200ML', unidad: '94', valorUnitario: 1300, ivaPct: 0, pesoRelativo: 0.49, cantBase: 2478 },
         { prefijo: 'HUE', descripcion: 'HUEVOS', unidad: '94', valorUnitario: 650, ivaPct: 0, pesoRelativo: 0.21, cantBase: 2145 },
         { prefijo: 'PAN', descripcion: 'PAN UNIDAD 40 GR', unidad: '94', valorUnitario: 850, ivaPct: 0, pesoRelativo: 0.30, cantBase: 2271 }
+      ],
+      'rpp': [
+        { prefijo: 'ARR', descripcion: 'Arroz blanco', unidad: 'LBR', valorUnitario: 2350, ivaPct: 0, pesoRelativo: 0.15, cantBase: 226 },
+        { prefijo: 'HUE', descripcion: 'Huevo de gallina AA', unidad: '94', valorUnitario: 550, ivaPct: 0, pesoRelativo: 0.25, cantBase: 1695 },
+        { prefijo: 'LEC', descripcion: 'Leche líquida', unidad: '94', valorUnitario: 4800, ivaPct: 0, pesoRelativo: 0.28, cantBase: 226 },
+        { prefijo: 'PAS', descripcion: 'SPAGUETTI', unidad: 'LBR', valorUnitario: 4285.71, ivaPct: 5, pesoRelativo: 0.12, cantBase: 113 },
+        { prefijo: 'HAR', descripcion: 'HARINA DE MAIZ', unidad: 'KGM', valorUnitario: 6333.33, ivaPct: 5, pesoRelativo: 0.10, cantBase: 113 },
+        { prefijo: 'LEN', descripcion: 'LENTEJA', unidad: 'LBR', valorUnitario: 3900, ivaPct: 0, pesoRelativo: 0.10, cantBase: 113 }
       ],
       'general': [
         { prefijo: 'LEC', descripcion: 'LECHE UHT LARGA VIDA X 200ML', unidad: '94', valorUnitario: 1177.67, ivaPct: 0.19, pesoRelativo: 0.35, cantBase: 350 },
@@ -1040,7 +1049,9 @@ Santa Teresita, 18000000
 
       // Detección automática del perfil si no viene especificado o viene 'auto'
       if (!tipoCanasta || tipoCanasta === 'auto') {
-        if (contraUpper.includes('REFRI') || nomUpper.includes('REFRI') || contraUpper.includes('REFRIGERIO')) {
+        if (contraUpper.includes('RPP') || nomUpper.includes('RPP')) {
+          tipoCanasta = 'rpp';
+        } else if (contraUpper.includes('REFRI') || nomUpper.includes('REFRI') || contraUpper.includes('REFRIGERIO')) {
           if (contraUpper.includes('1075') || nit === '800141359' || nomUpper.includes('CHAPARRAL')) {
             tipoCanasta = 'refrigerios_1075';
           } else if (contraUpper.includes('1077') || nit === '800231495' || nomUpper.includes('SANTA TERESITA')) {
@@ -1066,7 +1077,10 @@ Santa Teresita, 18000000
       let items = [];
       let origenTexto = '🛒 Canasta 39 Ítems';
 
-      if (tipoCanasta === 'refrigerios_1075') {
+      if (tipoCanasta === 'rpp') {
+        items = PLANTILLAS_REFRIGERIOS['rpp'].map(it => ({ ...it, activo: true, cantidad: 0 }));
+        origenTexto = '📦 RPP (Ración para Preparar)';
+      } else if (tipoCanasta === 'refrigerios_1075') {
         items = PLANTILLAS_REFRIGERIOS['1075'].map(it => ({ ...it, activo: true, cantidad: 0 }));
         origenTexto = '🥤 Refrigerios 1075 La Mesa (Chaparral)';
       } else if (tipoCanasta === 'refrigerios_1077') {
