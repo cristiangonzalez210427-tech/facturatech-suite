@@ -1202,8 +1202,17 @@ Santa Teresita, 18000000
       return (letras.slice(0, 3) || 'PRD').padEnd(3, 'X');
     }
 
-    function detectarUnidad(desc) {
-      const d = ` ${desc} `;
+    function detectarUnidad(desc, unidadCol = '') {
+      const u = (unidadCol || '').trim().toUpperCase();
+      if (['KILO', 'KILOS', 'KILOGRAMO', 'KGM', 'KG'].includes(u)) return 'KGM';
+      if (['LITRO', 'LITROS', 'LTR', 'LT'].includes(u)) return 'LTR';
+      if (['LIBRA', 'LIBRAS', 'LBR', 'LB'].includes(u)) return 'LBR';
+      if (['PAQUETE', 'PAQUETES', 'PAQ', 'PA'].includes(u)) return 'PA';
+      if (['UNIDAD', 'UNIDADES', 'UND', 'UN', '94', 'NIU'].includes(u)) return '94';
+      if (['BOLSA', 'BOLSAS'].includes(u)) return '94';
+      if (['CAJA', 'CAJAS'].includes(u)) return '94';
+
+      const d = ` ${desc} `.toUpperCase();
       if ([' KILOS', ' KILO ', ' KGM', ' KG '].some(k => d.includes(k))) return 'KGM';
       if (d.includes('UNIDAD') || d.includes(' UND') || d.includes('CUBETA')) return '94';
       if ([' 1000 CC', ' 500 CC', ' LITRO', ' LTR', ' BOLSA X 1000'].some(k => d.includes(k))) return 'LTR';
@@ -1215,7 +1224,9 @@ Santa Teresita, 18000000
     function extraerFacturas(rows, origen) {
       const facturas = [];
       let nitActual = null, clienteActual = '', contratoActual = '';
-      let enItems = false, colAlimento = 3, itemsActuales = [], granTotalExcel = null;
+      let enItems = false;
+      let colAlimento = -1, colUnidad = -1, colCantidad = -1, colVunit = -1, colIva = -1;
+      let itemsActuales = [], granTotalExcel = null;
 
       const guardarSiHay = () => {
         if (nitActual && itemsActuales.length > 0) {
@@ -1224,7 +1235,7 @@ Santa Teresita, 18000000
             origen,
             cliente: DIRECTORIO_EMPRESAS[nitActual] || clienteActual || `NIT ${nitActual}`,
             nit: nitActual,
-            contrato: contratoActual,
+            contrato: contratoActual || `CONTRATO NIT ${nitActual}`,
             granTotalExcel,
             items: itemsActuales
           };
@@ -1237,41 +1248,101 @@ Santa Teresita, 18000000
 
       for (const row of rows) {
         if (!row || !row.length) continue;
-        const vals = row.slice(0, 12);
-        const textoFila = vals.filter(x => x !== null && x !== undefined).join(' ').trim();
+        const vals = row.map(x => x !== null && x !== undefined ? String(x).trim() : '');
+        const textoFila = vals.join(' ').trim().toUpperCase();
         if (!textoFila) continue;
 
-        const idxCliente = vals.findIndex(x => x !== null && x !== undefined && String(x).toUpperCase().includes('CLIENTE'));
-        if (idxCliente !== -1 && idxCliente <= 4) {
-          guardarSiHay();
+        // 1. Cliente
+        const idxCliente = vals.findIndex(x => x.toUpperCase().includes('CLIENTE'));
+        if (idxCliente !== -1 && idxCliente <= 5) {
+          const resto = vals.slice(idxCliente + 1).filter(x => x !== '');
+          if (resto.length > 0) {
+            if (itemsActuales.length > 0) guardarSiHay();
+            enItems = false;
+            clienteActual = resto[0];
+            continue;
+          }
+        }
+
+        // 2. NIT
+        const mNit = textoFila.match(/NIT\s*[:.]?\s*(\d+)/i);
+        if (mNit) {
+          if (itemsActuales.length > 0) guardarSiHay();
+          nitActual = mNit[1];
           enItems = false;
-          const resto = vals.slice(idxCliente + 1).filter(x => x !== null && x !== undefined && String(x).trim() !== '');
-          clienteActual = resto[0] ? String(resto[0]).trim() : '';
           continue;
         }
 
-        const mNit = textoFila.match(/NIT\s*[:.]?\s*(\d+)/i);
-        if (mNit) { guardarSiHay(); nitActual = mNit[1]; enItems = false; continue; }
-
-        const celdaContrato = vals.find(x => x && String(x).trim().toUpperCase().startsWith('CONTRATO'));
-        if (celdaContrato) { contratoActual = String(celdaContrato).trim(); continue; }
-
-        const idxAlim = vals.findIndex(x => x && String(x).trim().toUpperCase() === 'ALIMENTO');
-        if (idxAlim !== -1) { colAlimento = idxAlim; enItems = true; continue; }
-
-        const idxGranTotal = vals.findIndex(x => x && String(x).toUpperCase().includes('GRAN TOTAL'));
-        if (idxGranTotal !== -1) {
-          const numsDespues = vals.slice(idxGranTotal + 1).map(limpiarNumero).filter(n => n > 0);
-          granTotalExcel = numsDespues.length ? numsDespues[numsDespues.length - 1] : 0;
-          guardarSiHay(); enItems = false; continue;
+        // 3. Contrato
+        const idxContrato = vals.findIndex(x => x.toUpperCase().startsWith('CONTRATO'));
+        if (idxContrato !== -1) {
+          if (itemsActuales.length > 0) guardarSiHay();
+          contratoActual = vals[idxContrato];
+          enItems = false;
+          continue;
         }
 
-        if (enItems) {
-          const nombreProd = String(vals[colAlimento] || '').trim();
-          if (!nombreProd) continue;
-          const cant = limpiarNumero(vals[colAlimento + 1]);
-          const vUnit = limpiarNumero(vals[colAlimento + 2]);
-          const ivaRaw = limpiarNumero(vals[colAlimento + 3]);
+        // 4. Encabezado de productos (ALIMENTO, PRODUCTO, DESCRIPCION)
+        const idxAlim = vals.findIndex(x => ['ALIMENTO', 'PRODUCTO', 'DESCRIPCION', 'DETALLE'].includes(x.toUpperCase()));
+        if (idxAlim !== -1) {
+          colAlimento = idxAlim;
+          colUnidad = -1;
+          colCantidad = -1;
+          colVunit = -1;
+          colIva = -1;
+
+          for (let c = idxAlim + 1; c < vals.length; c++) {
+            const h = vals[c].toUpperCase();
+            if (h.includes('UNIDAD') || h.includes('MEDIDA')) {
+              colUnidad = c;
+            } else if (h.includes('CANT')) {
+              colCantidad = c;
+            } else if ((h.includes('UNIT') || h.includes('PRECIO') || h.includes('VALOR')) && !h.includes('TOTAL')) {
+              if (colVunit === -1) colVunit = c;
+            } else if (h.includes('IVA') && !h.includes('TOTAL')) {
+              colIva = c;
+            }
+          }
+
+          if (colCantidad === -1) colCantidad = colAlimento + 1;
+          if (colVunit === -1) colVunit = colCantidad + 1;
+          if (colIva === -1) colIva = colVunit + 1;
+
+          enItems = true;
+          continue;
+        }
+
+        // 5. Gran Total
+        if (textoFila.includes('GRAN TOTAL') || textoFila.includes('TOTAL FACTURA')) {
+          const nums = vals.map(limpiarNumero).filter(n => n > 0);
+          if (nums.length > 0) granTotalExcel = nums[nums.length - 1];
+          guardarSiHay();
+          enItems = false;
+          continue;
+        }
+
+        // 6. Extracción de ítems
+        if (enItems && colAlimento !== -1) {
+          const nombreProd = vals[colAlimento] || '';
+          if (!nombreProd || nombreProd.toUpperCase().includes('GRAN TOTAL') || nombreProd.toUpperCase().includes('TOTAL')) continue;
+
+          let cant = colCantidad < vals.length ? limpiarNumero(vals[colCantidad]) : 0;
+          let vUnit = colVunit < vals.length ? limpiarNumero(vals[colVunit]) : 0;
+          let ivaRaw = (colIva !== -1 && colIva < vals.length) ? limpiarNumero(vals[colIva]) : 0;
+          let unidadTxt = (colUnidad !== -1 && colUnidad < vals.length) ? vals[colUnidad] : '';
+
+          // Fallback si colCantidad fue texto de unidad
+          if (cant === 0 && colAlimento + 2 < vals.length) {
+            const posibleCant = limpiarNumero(vals[colAlimento + 2]);
+            const posibleVunit = limpiarNumero(vals[colAlimento + 3]);
+            if (posibleCant > 0 && posibleVunit > 0) {
+              unidadTxt = vals[colAlimento + 1];
+              cant = posibleCant;
+              vUnit = posibleVunit;
+              ivaRaw = colAlimento + 4 < vals.length ? limpiarNumero(vals[colAlimento + 4]) : 0;
+            }
+          }
+
           if (cant > 0 && vUnit > 0) {
             const ivaPct = (ivaRaw > 0 && ivaRaw < 1) ? Math.round(ivaRaw * 100) : Math.round(ivaRaw);
             const descLimpia = limpiarDesc(nombreProd);
@@ -1279,7 +1350,7 @@ Santa Teresita, 18000000
               activo: true,
               prefijo: obtenerPrefijo(descLimpia),
               descripcion: descLimpia,
-              unidad: detectarUnidad(descLimpia),
+              unidad: detectarUnidad(descLimpia, unidadTxt),
               cantidad: cant,
               valorUnitario: Math.round(vUnit * 100) / 100,
               ivaPct: ivaPct
@@ -1287,6 +1358,7 @@ Santa Teresita, 18000000
           }
         }
       }
+
       guardarSiHay();
       return facturas;
     }
