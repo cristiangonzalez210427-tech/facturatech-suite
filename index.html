@@ -476,7 +476,14 @@
     // ================= SEGURIDAD, AUTENTICACIÓN Y SUPABASE CLOUD SYNC =================
     const HASH_CORRECTO = "201bce2458f00a54130c695ca8d1658319b32206d495adf175847b57bd4a4151"; // Admin123@
     const EMAIL_AUTORIZADO = "cristian.gonzalez210427@gmail.com";
+    const DEFAULT_SUPABASE_URL = "https://pexodzazlorjixiftcov.supabase.co";
+    const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBleG9kemF6bG9yaml4aWZ0Y292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzNjc1OTgsImV4cCI6MjEwODk0MzU5OH0.3EinNTV0e-AvIpLhekYYva4W1fWBUk-zjYAfq2SZbP0";
     let supabaseClient = null;
+
+    function limpiarUrlSupabase(raw) {
+      if (!raw) return '';
+      return raw.trim().replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+    }
 
     async function sha256(str) {
       const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
@@ -534,8 +541,8 @@
 
     // --- SUPABASE CLOUD DATABASE SYNC ---
     window.abrirModalSupabase = function() {
-      const sUrl = localStorage.getItem('lgc_supabase_url') || '';
-      const sKey = localStorage.getItem('lgc_supabase_key') || '';
+      const sUrl = localStorage.getItem('lgc_supabase_url') || DEFAULT_SUPABASE_URL;
+      const sKey = localStorage.getItem('lgc_supabase_key') || DEFAULT_SUPABASE_KEY;
       document.getElementById('supabaseUrlInput').value = sUrl;
       document.getElementById('supabaseKeyInput').value = sKey;
       document.getElementById('modalSupabase').style.display = 'flex';
@@ -546,8 +553,9 @@
     };
 
     function iniciarClienteSupabase() {
-      const sUrl = localStorage.getItem('lgc_supabase_url');
-      const sKey = localStorage.getItem('lgc_supabase_key');
+      let sUrl = localStorage.getItem('lgc_supabase_url') || DEFAULT_SUPABASE_URL;
+      let sKey = localStorage.getItem('lgc_supabase_key') || DEFAULT_SUPABASE_KEY;
+      sUrl = limpiarUrlSupabase(sUrl);
       const lbl = document.getElementById('lblCloudStatus');
       const btn = document.getElementById('btnCloudStatus');
 
@@ -581,7 +589,7 @@
     };
 
     window.probarYSincronizarSupabase = async function() {
-      const sUrl = document.getElementById('supabaseUrlInput').value.trim();
+      const sUrl = limpiarUrlSupabase(document.getElementById('supabaseUrlInput').value);
       const sKey = document.getElementById('supabaseKeyInput').value.trim();
       const msg = document.getElementById('supabaseStatusMsg');
       msg.style.display = 'block';
