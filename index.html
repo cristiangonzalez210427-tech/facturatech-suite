@@ -254,11 +254,16 @@ Santa Teresita, 18000000
           <div>
             <label>Tipo de Canasta / Productos:</label>
             <select id="propTipoCanasta" style="font-weight:600; font-size:12.5px;">
-              <option value="auto">⚡ Automático (Detectar por Asociación)</option>
+              <option value="auto">⚡ Automático (Detectar por Asociación / Contrato)</option>
               <option value="completo">🛒 Abarrotes Completo (39 Ítems con Huevos y Arepas)</option>
               <option value="solo_carnes">🥩 Solo Carnes / Proteínas (Verbenal y Refugio)</option>
               <option value="sin_huevos">🥚 Abarrotes Sin Huevos (Sin Barrera)</option>
               <option value="sin_arepas">🌽 Abarrotes Sin Arepas (Aposentos)</option>
+              <option value="refrigerios_1075">🥤 Refrigerios 1075 La Mesa (Chaparral: Leche, Galleta, Huevos, Manzana)</option>
+              <option value="refrigerios_1077">🥤 Refrigerios 1077 Girardot (Santa Teresita: Yogurt, Pan, Huevos, Manzana)</option>
+              <option value="refrigerios_sin_barrera">🥤 Refrigerios Sin Barrera (Leche, Yogurt, Pan, Queso, Frutas)</option>
+              <option value="refrigerios_lumed">🥤 Refrigerios LUMED (Leche, Huevos, Pan)</option>
+              <option value="refrigerios_base">🥤 Refrigerios General (Bebida láctea, Panadería, Fruta, Huevo)</option>
             </select>
           </div>
           <div>
@@ -464,6 +469,48 @@ Santa Teresita, 18000000
       { cantBase: 33,  prefijo: 'SAL', descripcion: 'SAL', unidad: 'LBR', valorUnitario: 1528, ivaPct: 0 },
       { cantBase: 15,  prefijo: 'VIN', descripcion: 'VINAGRE', unidad: 'VI', valorUnitario: 3193.47, ivaPct: 19 }
     ];
+
+    // ================= CANASTAS DE REFRIGERIOS ESPECIALIZADAS =================
+    const PLANTILLAS_REFRIGERIOS = {
+      '1075': [
+        { prefijo: 'LEC', descripcion: 'LECHE UHT LARGA VIDA X 200ML', unidad: '94', valorUnitario: 1177.67, ivaPct: 0.19, pesoRelativo: 0.45, cantBase: 430 },
+        { prefijo: 'GAL', descripcion: 'GALLETA INDIVIDUAL', unidad: 'PA', valorUnitario: 529.41, ivaPct: 0.19, pesoRelativo: 0.20, cantBase: 430 },
+        { prefijo: 'HUE', descripcion: 'HUEVOS', unidad: '94', valorUnitario: 590, ivaPct: 0, pesoRelativo: 0.20, cantBase: 425 },
+        { prefijo: 'MAN', descripcion: 'MANZANA', unidad: 'KGM', valorUnitario: 2047.30, ivaPct: 0, pesoRelativo: 0.15, cantBase: 77 }
+      ],
+      '1077': [
+        { prefijo: 'YOG', descripcion: 'YOGURTH ENTERO X200 ML', unidad: '94', valorUnitario: 1176.57, ivaPct: 0.19, pesoRelativo: 0.45, cantBase: 454 },
+        { prefijo: 'PAN', descripcion: 'PAN BLANDITO', unidad: 'PA', valorUnitario: 630, ivaPct: 0, pesoRelativo: 0.22, cantBase: 454 },
+        { prefijo: 'HUE', descripcion: 'HUEVOS', unidad: '94', valorUnitario: 590, ivaPct: 0, pesoRelativo: 0.20, cantBase: 454 },
+        { prefijo: 'MAN', descripcion: 'MANZANA', unidad: 'KGM', valorUnitario: 6845.27, ivaPct: 0, pesoRelativo: 0.13, cantBase: 50 }
+      ],
+      'sin_barrera': [
+        { prefijo: 'PAN', descripcion: 'PAN DE LECHE', unidad: '94', valorUnitario: 500, ivaPct: 0, pesoRelativo: 0.05, cantBase: 30 },
+        { prefijo: 'MAN', descripcion: 'MANGO', unidad: '94', valorUnitario: 600, ivaPct: 0, pesoRelativo: 0.05, cantBase: 30 },
+        { prefijo: 'YOG', descripcion: 'YOGURTH', unidad: '94', valorUnitario: 1344.53, ivaPct: 0.19, pesoRelativo: 0.10, cantBase: 27 },
+        { prefijo: 'QUE', descripcion: 'QUESO DOBLE CREMA 250 GR', unidad: '94', valorUnitario: 1900, ivaPct: 0, pesoRelativo: 0.25, cantBase: 75 },
+        { prefijo: 'PER', descripcion: 'PERA CRIOLLA', unidad: '94', valorUnitario: 750, ivaPct: 0, pesoRelativo: 0.06, cantBase: 41 },
+        { prefijo: 'LEC', descripcion: 'LECHE UHT LARGA VIDA X 200ML', unidad: '94', valorUnitario: 1600, ivaPct: 0, pesoRelativo: 0.20, cantBase: 70 },
+        { prefijo: 'MNI', descripcion: 'MANI', unidad: '94', valorUnitario: 1059.24, ivaPct: 0.19, pesoRelativo: 0.08, cantBase: 41 },
+        { prefijo: 'GAL', descripcion: 'GALLETA DULCE SIN RELLENO', unidad: '94', valorUnitario: 450, ivaPct: 0, pesoRelativo: 0.06, cantBase: 66 },
+        { prefijo: 'MAN', descripcion: 'MANTECADA', unidad: '94', valorUnitario: 700, ivaPct: 0, pesoRelativo: 0.05, cantBase: 40 },
+        { prefijo: 'BAN', descripcion: 'BANANO COMUN', unidad: '94', valorUnitario: 600, ivaPct: 0, pesoRelativo: 0.05, cantBase: 43 },
+        { prefijo: 'MOJ', descripcion: 'MOJICON', unidad: '94', valorUnitario: 500, ivaPct: 0, pesoRelativo: 0.05, cantBase: 30 }
+      ],
+      'lumed': [
+        { prefijo: 'LEC', descripcion: 'LECHE UHT LARGA VIDA X 200ML', unidad: '94', valorUnitario: 1300, ivaPct: 0, pesoRelativo: 0.49, cantBase: 2478 },
+        { prefijo: 'HUE', descripcion: 'HUEVOS', unidad: '94', valorUnitario: 650, ivaPct: 0, pesoRelativo: 0.21, cantBase: 2145 },
+        { prefijo: 'PAN', descripcion: 'PAN UNIDAD 40 GR', unidad: '94', valorUnitario: 850, ivaPct: 0, pesoRelativo: 0.30, cantBase: 2271 }
+      ],
+      'general': [
+        { prefijo: 'LEC', descripcion: 'LECHE UHT LARGA VIDA X 200ML', unidad: '94', valorUnitario: 1177.67, ivaPct: 0.19, pesoRelativo: 0.35, cantBase: 350 },
+        { prefijo: 'YOG', descripcion: 'YOGURTH ENTERO X200 ML', unidad: '94', valorUnitario: 1176.57, ivaPct: 0.19, pesoRelativo: 0.25, cantBase: 350 },
+        { prefijo: 'PAN', descripcion: 'PAN BLANDITO', unidad: 'PA', valorUnitario: 630, ivaPct: 0, pesoRelativo: 0.15, cantBase: 350 },
+        { prefijo: 'HUE', descripcion: 'HUEVOS', unidad: '94', valorUnitario: 590, ivaPct: 0, pesoRelativo: 0.15, cantBase: 350 },
+        { prefijo: 'MAN', descripcion: 'MANZANA', unidad: 'KGM', valorUnitario: 2047.30, ivaPct: 0, pesoRelativo: 0.10, cantBase: 60 }
+      ]
+    };
+
 
     let todasLasFacturas = [];
     let listaPazYSalvos = [];
@@ -863,15 +910,151 @@ Santa Teresita, 18000000
       return Math.round(sum * 100) / 100;
     }
 
+    function ajustarAFin(fac, valRaw) {
+      const indicesActivos = [];
+      fac.items.forEach((it, idx) => { if (it.activo) indicesActivos.push(idx); });
+      if (indicesActivos.length === 0) return;
+
+      let totalBaseActivos = 0;
+      indicesActivos.forEach(idx => {
+        const it = fac.items[idx];
+        const cantRef = it.cantBase || 10;
+        totalBaseActivos += calcularLinea(cantRef, it.valorUnitario, it.ivaPct).total;
+      });
+      if (totalBaseActivos <= 0) totalBaseActivos = 1;
+      const factor = valRaw / totalBaseActivos;
+
+      indicesActivos.forEach(idx => {
+        const it = fac.items[idx];
+        const cantRef = it.cantBase || 10;
+        it.cantidad = Math.max(1, Math.round(cantRef * factor));
+      });
+
+      // Ordenar candidatos por precio unitario final con IVA ascendente
+      const candidatosAjuste = indicesActivos.slice().sort((a, b) => {
+        const puA = fac.items[a].valorUnitario * (1 + fac.items[a].ivaPct / 100);
+        const puB = fac.items[b].valorUnitario * (1 + fac.items[b].ivaPct / 100);
+        return puA - puB;
+      });
+
+      // Paso 1: Ajuste greedy
+      for (let iter = 0; iter < 500; iter++) {
+        const actual = calcularTotalItems(fac.items);
+        const diff = valRaw - actual;
+        if (Math.abs(diff) < 50) break;
+        let mejorIdx = -1, mejorPaso = 0, menorErr = Math.abs(diff);
+        for (const idx of candidatosAjuste) {
+          const pu = fac.items[idx].valorUnitario * (1 + fac.items[idx].ivaPct / 100);
+          const paso = diff > 0 ? 1 : -1;
+          if (fac.items[idx].cantidad + paso < 1) continue;
+          const err = Math.abs(diff - paso * pu);
+          if (err < menorErr) { menorErr = err; mejorIdx = idx; mejorPaso = paso; }
+        }
+        if (mejorIdx !== -1) fac.items[mejorIdx].cantidad += mejorPaso;
+        else break;
+      }
+
+      // Paso 2: Búsqueda combinatoria fina en los items de menor valor
+      const actualPre = calcularTotalItems(fac.items);
+      const rem = valRaw - actualPre;
+      if (Math.abs(rem) >= 1 && Math.abs(rem) <= 25000 && candidatosAjuste.length >= 2) {
+        const bajos = candidatosAjuste.slice(0, Math.min(4, candidatosAjuste.length));
+        let bestDelta = null;
+        let bestErr = Math.abs(rem);
+
+        for (let d0 = -8; d0 <= 8; d0++) {
+          if (fac.items[bajos[0]].cantidad + d0 < 1) continue;
+          const p0 = fac.items[bajos[0]].valorUnitario * (1 + fac.items[bajos[0]].ivaPct / 100);
+          for (let d1 = -6; d1 <= 6; d1++) {
+            if (fac.items[bajos[1]].cantidad + d1 < 1) continue;
+            const p1 = fac.items[bajos[1]].valorUnitario * (1 + fac.items[bajos[1]].ivaPct / 100);
+
+            if (bajos.length >= 3) {
+              for (let d2 = -6; d2 <= 6; d2++) {
+                if (fac.items[bajos[2]].cantidad + d2 < 1) continue;
+                const p2 = fac.items[bajos[2]].valorUnitario * (1 + fac.items[bajos[2]].ivaPct / 100);
+                const sub = d0 * p0 + d1 * p1 + d2 * p2;
+                const falta = rem - sub;
+
+                if (bajos.length >= 4) {
+                  const p3 = fac.items[bajos[3]].valorUnitario * (1 + fac.items[bajos[3]].ivaPct / 100);
+                  const d3 = Math.round(falta / p3);
+                  if (Math.abs(d3) <= 10 && fac.items[bajos[3]].cantidad + d3 >= 1) {
+                    const err = Math.abs(rem - (sub + d3 * p3));
+                    if (err < bestErr) {
+                      bestErr = err;
+                      bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1, [bajos[2]]: d2, [bajos[3]]: d3 };
+                    }
+                  }
+                } else {
+                  const err = Math.abs(rem - sub);
+                  if (err < bestErr) {
+                    bestErr = err;
+                    bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1, [bajos[2]]: d2 };
+                  }
+                }
+              }
+            } else {
+              const sub = d0 * p0 + d1 * p1;
+              const err = Math.abs(rem - sub);
+              if (err < bestErr) {
+                bestErr = err;
+                bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1 };
+              }
+            }
+          }
+        }
+
+        if (bestDelta) {
+          for (const [idxStr, delta] of Object.entries(bestDelta)) {
+            fac.items[Number(idxStr)].cantidad += delta;
+          }
+        }
+      }
+
+      // Paso 3: Ajuste de centavos / residual exacto a $0.00 en ítem sin IVA (ej: Manzana, Fruta, Pan o Carne)
+      const diffFinal = valRaw - calcularTotalItems(fac.items);
+      if (Math.abs(diffFinal) >= 0.01 && Math.abs(diffFinal) <= 5000) {
+        // Buscar un ítem activo sin IVA para ajustar su valor unitario
+        const idxAjustable = indicesActivos.slice().reverse().find(idx => (fac.items[idx].ivaPct || 0) === 0 && fac.items[idx].cantidad > 0);
+        if (idxAjustable !== undefined) {
+          const it = fac.items[idxAjustable];
+          let sumaOtros = 0;
+          indicesActivos.forEach(idx => {
+            if (idx !== idxAjustable) {
+              sumaOtros += calcularLinea(fac.items[idx].cantidad, fac.items[idx].valorUnitario, fac.items[idx].ivaPct).total;
+            }
+          });
+          const nuevoVunit = Math.round(((valRaw - sumaOtros) / it.cantidad) * 100) / 100;
+          if (nuevoVunit > 100) {
+            it.valorUnitario = nuevoVunit;
+          }
+        }
+      }
+    }
+
     function construirFacturaProporcional(nit, valRaw, contrato, tipoCanasta = null) {
       const nombreEmpresa = DIRECTORIO_EMPRESAS[nit] || (document.getElementById('propClienteInput') ? document.getElementById('propClienteInput').value.trim() : '') || `CLIENTE NIT ${nit}`;
       const nomUpper = nombreEmpresa.toUpperCase();
+      const contraUpper = (contrato || '').toUpperCase();
 
       // Detección automática del perfil si no viene especificado o viene 'auto'
       if (!tipoCanasta || tipoCanasta === 'auto') {
-        if (nit === '800229362' || nit === '800138259' || nomUpper.includes('VERBENAL') || nomUpper.includes('REFUGIO') || nomUpper.includes('VERVENAL')) {
+        if (contraUpper.includes('REFRI') || nomUpper.includes('REFRI') || contraUpper.includes('REFRIGERIO')) {
+          if (contraUpper.includes('1075') || nit === '800141359' || nomUpper.includes('CHAPARRAL')) {
+            tipoCanasta = 'refrigerios_1075';
+          } else if (contraUpper.includes('1077') || nit === '800231495' || nomUpper.includes('SANTA TERESITA')) {
+            tipoCanasta = 'refrigerios_1077';
+          } else if (nit === '900244596' || nomUpper.includes('SIN BARRERA')) {
+            tipoCanasta = 'refrigerios_sin_barrera';
+          } else if (nit === '800062616' || nomUpper.includes('LUMED')) {
+            tipoCanasta = 'refrigerios_lumed';
+          } else {
+            tipoCanasta = 'refrigerios_base';
+          }
+        } else if (nit === '800229362' || nit === '800138259' || nomUpper.includes('VERBENAL') || nomUpper.includes('REFUGIO') || nomUpper.includes('VERVENAL')) {
           tipoCanasta = 'solo_carnes';
-        } else if (nit === '900244596' || nomUpper.includes('SIN BARRERA')) {
+        } else if (nit === '900244596' || nomUpper.includes('SIN BARRERA') || contraUpper.includes('SIN HUEVOS') || contraUpper.includes('NO FACTURAR HUEVOS')) {
           tipoCanasta = 'sin_huevos';
         } else if (nit === '901753677' || nomUpper.includes('APOSENTO')) {
           tipoCanasta = 'sin_arepas';
@@ -880,157 +1063,92 @@ Santa Teresita, 18000000
         }
       }
 
-      // Configurar estado activo según la canasta seleccionada
-      const items = PLANTILLA_39_BASE.map(it => {
-        let activo = true;
-        const desc = it.descripcion.toUpperCase();
-        const esCarne = desc.includes('CARNE') || desc.includes('HIGADO') || desc.includes('MOLLEJA') || desc.includes('POLLO') || desc.includes('RES') || desc.includes('CERDO') || desc.includes('QUESO');
+      let items = [];
+      let origenTexto = '🛒 Canasta 39 Ítems';
 
-        if (tipoCanasta === 'solo_carnes') {
-          activo = esCarne;
-        } else if (tipoCanasta === 'sin_huevos') {
-          if (desc.includes('HUEVO')) activo = false;
-        } else if (tipoCanasta === 'sin_arepas') {
-          if (desc.includes('AREPA')) activo = false;
-        }
+      if (tipoCanasta === 'refrigerios_1075') {
+        items = PLANTILLAS_REFRIGERIOS['1075'].map(it => ({ ...it, activo: true, cantidad: 0 }));
+        origenTexto = '🥤 Refrigerios 1075 La Mesa (Chaparral)';
+      } else if (tipoCanasta === 'refrigerios_1077') {
+        items = PLANTILLAS_REFRIGERIOS['1077'].map(it => ({ ...it, activo: true, cantidad: 0 }));
+        origenTexto = '🥤 Refrigerios 1077 Girardot (Santa Teresita - Solo Pan)';
+      } else if (tipoCanasta === 'refrigerios_sin_barrera') {
+        items = PLANTILLAS_REFRIGERIOS['sin_barrera'].map(it => ({ ...it, activo: true, cantidad: 0 }));
+        origenTexto = '🥤 Refrigerios Sin Barrera';
+      } else if (tipoCanasta === 'refrigerios_lumed') {
+        items = PLANTILLAS_REFRIGERIOS['lumed'].map(it => ({ ...it, activo: true, cantidad: 0 }));
+        origenTexto = '🥤 Refrigerios LUMED';
+      } else if (tipoCanasta === 'refrigerios_base') {
+        items = PLANTILLAS_REFRIGERIOS['general'].map(it => ({ ...it, activo: true, cantidad: 0 }));
+        origenTexto = '🥤 Refrigerios General';
+      } else {
+        items = PLANTILLA_39_BASE.map(it => {
+          let activo = true;
+          const desc = it.descripcion.toUpperCase();
+          const esCarne = desc.includes('CARNE') || desc.includes('HIGADO') || desc.includes('MOLLEJA') || desc.includes('POLLO') || desc.includes('RES') || desc.includes('CERDO') || desc.includes('QUESO');
 
-        return {
-          activo,
-          prefijo: it.prefijo,
-          descripcion: it.descripcion,
-          unidad: it.unidad,
-          cantidad: 0,
-          valorUnitario: it.valorUnitario,
-          ivaPct: it.ivaPct
-        };
-      });
+          if (tipoCanasta === 'solo_carnes') {
+            activo = esCarne;
+          } else if (tipoCanasta === 'sin_huevos') {
+            if (desc.includes('HUEVO')) activo = false;
+          } else if (tipoCanasta === 'sin_arepas') {
+            if (desc.includes('AREPA')) activo = false;
+          }
+
+          return {
+            activo,
+            prefijo: it.prefijo,
+            descripcion: it.descripcion,
+            unidad: it.unidad,
+            cantidad: 0,
+            cantBase: it.cantBase,
+            valorUnitario: it.valorUnitario,
+            ivaPct: it.ivaPct
+          };
+        });
+        origenTexto = tipoCanasta === 'solo_carnes' ? '🥩 Solo Carnes / Proteínas' : (tipoCanasta === 'sin_huevos' ? '🥚 Abarrotes Sin Huevos' : (tipoCanasta === 'sin_arepas' ? '🌽 Abarrotes Sin Arepas' : '🛒 Canasta 39 Ítems'));
+      }
 
       // Crear factura preliminar
-      const origenTexto = tipoCanasta === 'solo_carnes' ? 'Solo Carnes / Proteínas' : (tipoCanasta === 'sin_huevos' ? 'Abarrotes Sin Huevos' : 'Canasta 39 Ítems');
       const fac = {
         id: Date.now() + Math.random(),
         fechaCreacion: new Date().toISOString().slice(0, 10),
         origen: origenTexto,
         cliente: nombreEmpresa,
         nit: nit,
-        contrato: contrato || `${tipoCanasta === 'solo_carnes' ? 'CARNES ' : 'PROPORCIONAL '}$${valRaw.toLocaleString('es-CO')}`,
+        contrato: contrato || `${tipoCanasta.startsWith('refrigerios') ? 'REFRIGERIOS ' : (tipoCanasta === 'solo_carnes' ? 'CARNES ' : 'PROPORCIONAL ')}$${valRaw.toLocaleString('es-CO')}`,
         granTotalExcel: valRaw,
         tipoCanasta: tipoCanasta,
         items: items
       };
 
-      // Ejecutar el cálculo y ajuste fino directamente sobre fac
-      const indicesActivos = [];
-      fac.items.forEach((it, idx) => { if (it.activo) indicesActivos.push(idx); });
-
-      if (indicesActivos.length > 0) {
-        let totalBaseActivos = 0;
-        indicesActivos.forEach(idx => {
-          const it = fac.items[idx];
-          totalBaseActivos += calcularLinea(it.cantBase || PLANTILLA_39_BASE[idx].cantBase, it.valorUnitario, it.ivaPct).total;
-        });
-        if (totalBaseActivos <= 0) totalBaseActivos = 1;
-        const factor = valRaw / totalBaseActivos;
-
-        indicesActivos.forEach(idx => {
-          const it = fac.items[idx];
-          const cantRef = PLANTILLA_39_BASE[idx].cantBase;
-          it.cantidad = Math.max(1, Math.round(cantRef * factor));
-        });
-
-        // Candidatos ordenados por precio final ascendente
-        const candidatosAjuste = indicesActivos.slice().sort((a, b) => {
-          const puA = fac.items[a].valorUnitario * (1 + fac.items[a].ivaPct / 100);
-          const puB = fac.items[b].valorUnitario * (1 + fac.items[b].ivaPct / 100);
-          return puA - puB;
-        });
-
-        for (let iter = 0; iter < 500; iter++) {
-          const actual = calcularTotalItems(fac.items);
-          const diff = valRaw - actual;
-          if (Math.abs(diff) < 100) break;
-          let mejorIdx = -1, mejorPaso = 0, menorErr = Math.abs(diff);
-          for (const idx of candidatosAjuste) {
-            const pu = fac.items[idx].valorUnitario * (1 + fac.items[idx].ivaPct / 100);
-            const paso = diff > 0 ? 1 : -1;
-            if (fac.items[idx].cantidad + paso < 1) continue;
-            const err = Math.abs(diff - paso * pu);
-            if (err < menorErr) { menorErr = err; mejorIdx = idx; mejorPaso = paso; }
-          }
-          if (mejorIdx !== -1) fac.items[mejorIdx].cantidad += mejorPaso;
-          else break;
-        }
-
-        // Combinatoria con los más económicos
-        const actualPre = calcularTotalItems(fac.items);
-        const rem = valRaw - actualPre;
-        if (Math.abs(rem) >= 1 && Math.abs(rem) <= 25000 && candidatosAjuste.length >= 2) {
-          const bajos = candidatosAjuste.slice(0, 4);
-          let bestDelta = null;
-          let bestErr = Math.abs(rem);
-
-          for (let d0 = -8; d0 <= 8; d0++) {
-            if (fac.items[bajos[0]].cantidad + d0 < 1) continue;
-            const p0 = fac.items[bajos[0]].valorUnitario * (1 + fac.items[bajos[0]].ivaPct / 100);
-            for (let d1 = -6; d1 <= 6; d1++) {
-              if (fac.items[bajos[1]].cantidad + d1 < 1) continue;
-              const p1 = fac.items[bajos[1]].valorUnitario * (1 + fac.items[bajos[1]].ivaPct / 100);
-
-              if (bajos.length >= 3) {
-                for (let d2 = -6; d2 <= 6; d2++) {
-                  if (fac.items[bajos[2]].cantidad + d2 < 1) continue;
-                  const p2 = fac.items[bajos[2]].valorUnitario * (1 + fac.items[bajos[2]].ivaPct / 100);
-                  const sub = d0 * p0 + d1 * p1 + d2 * p2;
-                  const falta = rem - sub;
-
-                  if (bajos.length >= 4) {
-                    const p3 = fac.items[bajos[3]].valorUnitario * (1 + fac.items[bajos[3]].ivaPct / 100);
-                    const d3 = Math.round(falta / p3);
-                    if (Math.abs(d3) <= 10 && fac.items[bajos[3]].cantidad + d3 >= 1) {
-                      const err = Math.abs(rem - (sub + d3 * p3));
-                      if (err < bestErr) {
-                        bestErr = err;
-                        bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1, [bajos[2]]: d2, [bajos[3]]: d3 };
-                      }
-                    }
-                  } else {
-                    const err = Math.abs(rem - sub);
-                    if (err < bestErr) {
-                      bestErr = err;
-                      bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1, [bajos[2]]: d2 };
-                    }
-                  }
-                }
-              } else {
-                const sub = d0 * p0 + d1 * p1;
-                const err = Math.abs(rem - sub);
-                if (err < bestErr) {
-                  bestErr = err;
-                  bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1 };
-                }
-              }
-            }
-          }
-
-          if (bestDelta) {
-            for (const [idxStr, delta] of Object.entries(bestDelta)) {
-              fac.items[Number(idxStr)].cantidad += delta;
-            }
-          }
-        }
-      }
-
+      ajustarAFin(fac, valRaw);
       return fac;
     }
+
+    // ================= RECALCULAR PROPORCIONAL CON ITEMS ACTIVOS =================
+    window.recalcularFacturaProporcional = function(fIdx) {
+      const fac = todasLasFacturas[fIdx];
+      if (!fac || !fac.granTotalExcel) {
+        alert('Esta factura no tiene un valor total objetivo registrado para recalcular.');
+        return;
+      }
+      const valRaw = fac.granTotalExcel;
+      ajustarAFin(fac, valRaw);
+      renderizarFacturas();
+      guardarFacturaEnHistorial(fac);
+      actualizarContadorHistorial();
+    };
 
     window.agregarFacturaProporcional = function() {
       const nit = document.getElementById('propNit').value.trim().replace(/[^0-9]/g, '');
       const valRaw = limpiarNumero(document.getElementById('propValor').value);
       const contrato = document.getElementById('propContrato').value.trim();
+      const tipoCanasta = document.getElementById('propTipoCanasta') ? document.getElementById('propTipoCanasta').value : 'auto';
       if (!nit) { alert('Ingresa el NIT del cliente.'); return; }
       if (!valRaw || valRaw <= 0) { alert('Ingresa un Valor Total mayor a 0.'); return; }
 
-      const fac = construirFacturaProporcional(nit, valRaw, contrato);
+      const fac = construirFacturaProporcional(nit, valRaw, contrato, tipoCanasta);
       todasLasFacturas.push(fac);
       guardarFacturaEnHistorial(fac);
       document.getElementById('propValor').value = '';
@@ -1221,7 +1339,121 @@ Santa Teresita, 18000000
       return '94';
     }
 
-    function extraerFacturas(rows, origen) {
+        // ================= PARSER DE TABLAS RESUMEN DE LIQUIDACIÓN / CONTRATOS =================
+    function extraerFacturasDesdeResumenLiquidacion(rows, origen) {
+      const facturas = [];
+      let clienteActual = '', nitActual = '', contratoActual = '', notaActual = '';
+
+      for (const rawRow of rows) {
+        if (!rawRow || !rawRow.length) continue;
+        const vals = [];
+        for (let i = 0; i < rawRow.length; i++) {
+          const cell = rawRow[i];
+          vals.push((cell === null || cell === undefined) ? '' : String(cell).trim());
+        }
+        const textoFila = vals.join(' ').trim().toUpperCase();
+        if (!textoFila) continue;
+
+        // 1. Cliente
+        const idxCli = vals.findIndex(x => (x || '').toUpperCase().includes('CLIENTE'));
+        if (idxCli !== -1 && idxCli <= 5) {
+          const resto = vals.slice(idxCli + 1).filter(x => (x || '') !== '' && !(x || '').toUpperCase().includes('CLIENTE'));
+          if (resto.length > 0 && resto[0].length > 4) {
+            clienteActual = resto[0];
+          }
+        }
+
+        // 2. NIT
+        const mNit = textoFila.match(/NIT\s*[:.]?\s*(\d+)/i);
+        if (mNit) {
+          nitActual = mNit[1];
+        }
+
+        // 3. Contrato
+        const idxContra = vals.findIndex(x => (x || '').toUpperCase().startsWith('CONTRATO'));
+        if (idxContra !== -1) {
+          contratoActual = vals[idxContra];
+        }
+
+        // 4. Nota
+        const idxNota = vals.findIndex(x => (x || '').toUpperCase().includes('NOTA:'));
+        if (idxNota !== -1) {
+          notaActual = vals[idxNota];
+        }
+
+        // 5. REFRIGERIOS
+        if (textoFila.includes('REFRIGERIOS')) {
+          for (const v of vals) {
+            const num = limpiarNumero(v);
+            if (num > 1000) {
+              let tipoCanasta = 'refrigerios_base';
+              const contraUp = (contratoActual || '').toUpperCase();
+              const cliUp = (clienteActual || '').toUpperCase();
+              if (contraUp.includes('1075') || nitActual === '800141359' || cliUp.includes('CHAPARRAL')) {
+                tipoCanasta = 'refrigerios_1075';
+              } else if (contraUp.includes('1077') || nitActual === '800231495' || cliUp.includes('SANTA TERESITA')) {
+                tipoCanasta = 'refrigerios_1077';
+              } else if (nitActual === '900244596' || cliUp.includes('SIN BARRERA')) {
+                tipoCanasta = 'refrigerios_sin_barrera';
+              } else if (nitActual === '800062616' || cliUp.includes('LUMED')) {
+                tipoCanasta = 'refrigerios_lumed';
+              }
+
+              const nombreDef = DIRECTORIO_EMPRESAS[nitActual] || clienteActual || `CLIENTE NIT ${nitActual}`;
+              const fac = construirFacturaProporcional(nitActual, num, `${contratoActual} REFRIS`.trim(), tipoCanasta);
+              fac.origen = `${origen} (Refrigerios)`;
+              fac.cliente = nombreDef;
+              if (notaActual) fac.nota = notaActual;
+              facturas.push(fac);
+              guardarFacturaEnHistorial(fac);
+              break;
+            }
+          }
+        }
+
+        // 6. JHON / RACION SERVIDA
+        const idxJhon = vals.findIndex(x => (x || '').toUpperCase() === 'JHON');
+        if (idxJhon !== -1) {
+          for (let i = idxJhon + 1; i < Math.min(vals.length, idxJhon + 4); i++) {
+            const num = limpiarNumero(vals[i]);
+            if (num > 1000) {
+              const rowNotes = vals.slice(i + 1).filter(x => (x || '') !== '').join(' ');
+              const fullNotes = (notaActual + ' ' + rowNotes).trim();
+              let tipoCanasta = 'completo';
+              const fullUp = fullNotes.toUpperCase();
+              if (fullUp.includes('NO FACTURAR HUEVOS') || fullUp.includes('SIN HUEVOS')) {
+                tipoCanasta = 'sin_huevos';
+              } else if (fullUp.includes('SOLO CARNES')) {
+                tipoCanasta = 'solo_carnes';
+              }
+
+              const nombreDef = DIRECTORIO_EMPRESAS[nitActual] || clienteActual || `CLIENTE NIT ${nitActual}`;
+              const fac = construirFacturaProporcional(nitActual, num, `${contratoActual} JHON`.trim(), tipoCanasta);
+              fac.origen = `${origen} (Ración Servida JHON)`;
+              fac.cliente = nombreDef;
+              if (fullNotes) fac.nota = fullNotes;
+              facturas.push(fac);
+              guardarFacturaEnHistorial(fac);
+              break;
+            }
+          }
+        }
+      }
+
+      return facturas;
+    }
+
+function extraerFacturas(rows, origen) {
+      // Detección de Tabla Resumen de Liquidación / Contratos (ej: JHON, ACAP, RACION SERVIDA, REFRIGERIOS)
+      const esResumenLiquidacion = rows.some(r => {
+        if (!r) return false;
+        const txt = (Array.isArray(r) ? r.join(' ') : String(r)).toUpperCase();
+        return txt.includes('RACION SERVIDA') || txt.includes('REFRIGERIOS') || (txt.includes('JHON') && txt.includes('ACAP'));
+      });
+      if (esResumenLiquidacion) {
+        return extraerFacturasDesdeResumenLiquidacion(rows, origen);
+      }
+
       const facturas = [];
       let nitActual = null, clienteActual = '', contratoActual = '';
       let enItems = false;
