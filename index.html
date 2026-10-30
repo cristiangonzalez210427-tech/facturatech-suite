@@ -70,6 +70,9 @@
     .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
     .btn-sec { background: #334155; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-sec:hover { background: #1e293b; }
+    .btn-danger { background: #dc2626; color: #fff; border: none; padding: 7px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; transition: 0.15s; }
+    .btn-danger:hover { background: #b91c1c; }
+
     .btn-ok { background: var(--ok); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-ai { background: var(--ai); color: #fff; border: none; padding: 9px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
 
@@ -264,7 +267,7 @@
       <div class="card" id="listaPysCard" style="display:none;">
         <div class="card-title">
           <span>Certificados listos en vista previa (<span id="countPysListos">0</span>)</span>
-          <button type="button" class="btn-sec" onclick="listaPazYSalvos=[]; renderPazYSalvos();">Limpiar Certificados</button>
+          <button type="button" class="btn-danger" onclick="listaPazYSalvos=[]; renderPazYSalvos();">🗑 Borrar Todos los Certificados</button>
         </div>
       </div>
 
@@ -917,6 +920,22 @@
       descargarArchivoTexto(csv, `Facturas_FacturaTech_${fecha}.csv`);
     };
 
+        window.eliminarFactura = function(fIdx) {
+      if (confirm('¿Deseas eliminar esta factura de la mesa de trabajo?')) {
+        todasLasFacturas.splice(fIdx, 1);
+        renderFacturas();
+      }
+    };
+
+    window.eliminarRegistroHistorial = function(id) {
+      if (confirm('¿Deseas eliminar este registro del historial?')) {
+        historialGuardado = historialGuardado.filter(x => String(x.id) !== String(id));
+        localStorage.setItem('lgc_historial_v1', JSON.stringify(historialGuardado));
+        actualizarBadgeHistorial();
+        renderHistorial();
+      }
+    };
+
     window.descargarUnaFactura = function(fIdx) {
       const f = todasLasFacturas[fIdx];
       const fecha = document.getElementById('fechaVenc').value;
@@ -968,7 +987,7 @@
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
               ${f.granTotalExcel ? `<span class="badge ${Math.abs(dif) <= 500 ? 'badge-ok' : 'badge-warn'}">Objetivo: $${f.granTotalExcel.toLocaleString('es-CO')} (Dif: $${dif.toLocaleString('es-CO')})</span>` : ''}
               <strong style="font-size:15px;">Total: $${tot.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
-              <button type="button" class="btn-sec" onclick="descargarUnaFactura(${fIdx})">⬇ CSV Individual</button>
+              <button type="button" class="btn-sec" onclick="descargarUnaFactura(${fIdx})">⬇ CSV Individual</button> <button type="button" class="btn-danger" onclick="eliminarFactura(${fIdx})">🗑 Eliminar</button>
             </div>
           </div>
           <table>
@@ -1174,7 +1193,7 @@
           <td class="num"><strong>$${Number(h.total).toLocaleString('es-CO', { maximumFractionDigits: 2 })}</strong></td>
           <td>
             ${h.facturaData ? `<button type="button" class="btn-sec" onclick="reabrirFacturaHistorial('${h.id}')">Reabrir / CSV</button>` : ''}
-            <button type="button" class="btn-ok" onclick="crearPysDesdeHistorial('${h.id}')">Paz y Salvo</button>
+            <button type="button" class="btn-ok" onclick="crearPysDesdeHistorial('${h.id}')">Paz y Salvo</button> <button type="button" class="btn-danger" onclick="eliminarRegistroHistorial('${h.id}')" title="Borrar registro">🗑 Eliminar</button>
           </td>
         </tr>`;
       });
