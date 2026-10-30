@@ -128,8 +128,62 @@
       .pys-sheet { box-shadow: none !important; width: 100% !important; min-height: auto !important; padding: 15mm 18mm !important; page-break-after: always; }
     }
   </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+  <!-- ================= PANTALLA DE SEGURIDAD / LOGIN ================= -->
+  <div id="loginScreen" style="position:fixed; inset:0; background:rgba(15,23,42,0.96); backdrop-filter:blur(8px); z-index:99999; display:flex; align-items:center; justify-content:center; padding:15px;">
+    <div style="background:#fff; border-radius:18px; width:100%; max-width:420px; padding:34px 28px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); text-align:center;">
+      <div style="width:54px; height:54px; background:#e0e7ff; color:#3730a3; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px;">🔒</div>
+      <h2 style="margin:0 0 6px; font-size:21px; font-weight:800; color:#0f172a;">Acceso Protegido</h2>
+      <p style="margin:0 0 22px; font-size:13px; color:#64748b;">Suite de Facturación & Paz y Salvo LGC</p>
+      
+      <div style="text-align:left; margin-bottom:14px;">
+        <label style="font-size:12px; font-weight:700; color:#334155;">Correo Electrónico:</label>
+        <input type="email" id="loginEmail" placeholder="cristian.gonzalez210427@gmail.com" style="width:100%;" onkeydown="if(event.key==='Enter') document.getElementById('loginPassword').focus()" />
+      </div>
+      <div style="text-align:left; margin-bottom:18px;">
+        <label style="font-size:12px; font-weight:700; color:#334155;">Contraseña de Seguridad:</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" style="width:100%;" onkeydown="if(event.key==='Enter') autenticarUsuario()" />
+      </div>
+      
+      <div id="loginError" style="display:none; color:#dc2626; font-size:12.5px; font-weight:600; margin-bottom:14px; background:#fef2f2; border:1px solid #fecaca; padding:8px 10px; border-radius:8px;"></div>
+      
+      <button type="button" class="btn" style="width:100%; justify-content:center; padding:12px; font-size:14px; font-weight:700;" onclick="autenticarUsuario()">Ingresar a la Plataforma ➔</button>
+      <div style="margin-top:16px; font-size:11.5px; color:#94a3b8;">Acceso seguro con cifrado SHA-256</div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL CONEXIÓN NUBE SUPABASE ================= -->
+  <div id="modalSupabase" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:99990; align-items:center; justify-content:center; padding:15px;">
+    <div style="background:#fff; border-radius:16px; width:100%; max-width:540px; padding:26px; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a;">☁ Conectar Base de Datos en la Nube (Supabase)</h3>
+        <button type="button" onclick="cerrarModalSupabase()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#64748b;">✕</button>
+      </div>
+      <p style="font-size:13px; color:#475569; margin:0 0 16px; line-height:1.5;">
+        Conecta tu proyecto gratuito de <strong>Supabase</strong> para que todas las facturas e historial se sincronicen en tiempo real entre tu computador, laptop y celular.
+      </p>
+
+      <div style="margin-bottom:12px;">
+        <label>Supabase Project URL:</label>
+        <input type="text" id="supabaseUrlInput" placeholder="https://xyzabcdefghijklm.supabase.co" />
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label>Supabase Anon / Public Key:</label>
+        <input type="password" id="supabaseKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+      </div>
+
+      <div id="supabaseStatusMsg" style="margin-bottom:14px; font-size:12.5px; display:none; padding:8px 12px; border-radius:8px;"></div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button type="button" class="btn-sec" onclick="probarYSincronizarSupabase()">Probar y Sincronizar Ahora</button>
+        <button type="button" class="btn-ok" onclick="guardarConfigSupabase()">Guardar Conexión</button>
+      </div>
+    </div>
+  </div>
+
   <div class="topbar">
     <div class="brand">
       <h1>SUITE FACTURACIÓN & PAZ Y SALVO</h1>
@@ -140,6 +194,13 @@
       <button type="button" class="nav-btn" id="nav-pazysalvo" onclick="mostrarVista('pazysalvo')">2. Crear Paz y Salvo (PDF/CSV)</button>
       <button type="button" class="nav-btn" id="nav-historial" onclick="mostrarVista('historial')">3. Historial Guardado (<span id="badgeCount">0</span>)</button>
       <button type="button" class="nav-btn ai-tab" id="nav-ia" onclick="mostrarVista('ia')">✨ Copiloto IA (Gemini)</button>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button type="button" id="btnCloudStatus" class="btn-sec" style="padding:6px 11px; font-size:11.5px; border-radius:6px;" onclick="abrirModalSupabase()">☁ Nube: <span id="lblCloudStatus">Conectar Supabase</span></button>
+      <div id="userBadge" style="display:none; align-items:center; gap:8px;">
+        <span style="font-size:12px; color:#e2e8f0; background:rgba(255,255,255,0.12); padding:5px 10px; border-radius:6px; font-weight:600;">👤 <span id="lblUserEmail"></span></span>
+        <button type="button" class="btn-danger" style="padding:5px 10px; font-size:11.5px; border-radius:6px;" onclick="cerrarSesion()">Cerrar Sesión</button>
+      </div>
     </div>
   </div>
 
@@ -411,6 +472,199 @@
       }
     });
 
+
+    // ================= SEGURIDAD, AUTENTICACIÓN Y SUPABASE CLOUD SYNC =================
+    const HASH_CORRECTO = "201bce2458f00a54130c695ca8d1658319b32206d495adf175847b57bd4a4151"; // Admin123@
+    const EMAIL_AUTORIZADO = "cristian.gonzalez210427@gmail.com";
+    let supabaseClient = null;
+
+    async function sha256(str) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    window.autenticarUsuario = async function() {
+      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      const pass = document.getElementById('loginPassword').value;
+      const errBox = document.getElementById('loginError');
+
+      if (!email || !pass) {
+        errBox.textContent = 'Por favor ingresa tu correo y contraseña.';
+        errBox.style.display = 'block';
+        return;
+      }
+
+      const passHash = await sha256(pass);
+
+      if (email === EMAIL_AUTORIZADO && passHash === HASH_CORRECTO) {
+        localStorage.setItem('lgc_auth_user', email);
+        localStorage.setItem('lgc_auth_token', passHash);
+        document.getElementById('loginScreen').style.display = 'none';
+        errBox.style.display = 'none';
+        document.getElementById('lblUserEmail').textContent = email;
+        document.getElementById('userBadge').style.display = 'flex';
+        iniciarClienteSupabase();
+      } else {
+        errBox.textContent = 'Correo o contraseña incorrectos. Verifica tus credenciales.';
+        errBox.style.display = 'block';
+      }
+    };
+
+    window.cerrarSesion = function() {
+      if (confirm('¿Deseas cerrar la sesión segura?')) {
+        localStorage.removeItem('lgc_auth_user');
+        localStorage.removeItem('lgc_auth_token');
+        location.reload();
+      }
+    };
+
+    function verificarSesionActiva() {
+      const user = localStorage.getItem('lgc_auth_user');
+      const token = localStorage.getItem('lgc_auth_token');
+      if (user === EMAIL_AUTORIZADO && token === HASH_CORRECTO) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('lblUserEmail').textContent = user;
+        document.getElementById('userBadge').style.display = 'flex';
+        iniciarClienteSupabase();
+      } else {
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('userBadge').style.display = 'none';
+      }
+    }
+
+    // --- SUPABASE CLOUD DATABASE SYNC ---
+    window.abrirModalSupabase = function() {
+      const sUrl = localStorage.getItem('lgc_supabase_url') || '';
+      const sKey = localStorage.getItem('lgc_supabase_key') || '';
+      document.getElementById('supabaseUrlInput').value = sUrl;
+      document.getElementById('supabaseKeyInput').value = sKey;
+      document.getElementById('modalSupabase').style.display = 'flex';
+    };
+
+    window.cerrarModalSupabase = function() {
+      document.getElementById('modalSupabase').style.display = 'none';
+    };
+
+    function iniciarClienteSupabase() {
+      const sUrl = localStorage.getItem('lgc_supabase_url');
+      const sKey = localStorage.getItem('lgc_supabase_key');
+      const lbl = document.getElementById('lblCloudStatus');
+      const btn = document.getElementById('btnCloudStatus');
+
+      if (sUrl && sKey && window.supabase) {
+        try {
+          supabaseClient = window.supabase.createClient(sUrl, sKey);
+          lbl.textContent = '🟢 Conectado';
+          btn.style.borderColor = 'var(--ok)';
+          sincronizarDesdeSupabase();
+        } catch(e) {
+          console.warn('Error iniciando Supabase:', e);
+          lbl.textContent = '🟠 Error de conexión';
+        }
+      } else {
+        lbl.textContent = '☁ Conectar Supabase';
+      }
+    }
+
+    window.guardarConfigSupabase = function() {
+      const sUrl = document.getElementById('supabaseUrlInput').value.trim();
+      const sKey = document.getElementById('supabaseKeyInput').value.trim();
+      if (!sUrl || !sKey) {
+        alert('Por favor completa tanto la URL como la Anon Key de Supabase.');
+        return;
+      }
+      localStorage.setItem('lgc_supabase_url', sUrl);
+      localStorage.setItem('lgc_supabase_key', sKey);
+      iniciarClienteSupabase();
+      cerrarModalSupabase();
+      alert('¡Configuración de Supabase guardada correctamente!');
+    };
+
+    window.probarYSincronizarSupabase = async function() {
+      const sUrl = document.getElementById('supabaseUrlInput').value.trim();
+      const sKey = document.getElementById('supabaseKeyInput').value.trim();
+      const msg = document.getElementById('supabaseStatusMsg');
+      msg.style.display = 'block';
+
+      if (!sUrl || !sKey) {
+        msg.style.background = '#fef2f2'; msg.style.color = '#dc2626';
+        msg.textContent = 'Debes ingresar URL y Anon Key.';
+        return;
+      }
+
+      msg.style.background = '#f0fdf4'; msg.style.color = '#15803d';
+      msg.textContent = 'Probando conexión con Supabase...';
+
+      try {
+        const client = window.supabase.createClient(sUrl, sKey);
+        const { data, error } = await client.from('historial_facturas').select('id').limit(1);
+        if (error && error.code !== 'PGRST116') {
+          throw error;
+        }
+        msg.textContent = '✓ Conexión exitosa con Supabase. Sincronizando datos...';
+        localStorage.setItem('lgc_supabase_url', sUrl);
+        localStorage.setItem('lgc_supabase_key', sKey);
+        supabaseClient = client;
+        iniciarClienteSupabase();
+      } catch (err) {
+        msg.style.background = '#fef2f2'; msg.style.color = '#dc2626';
+        msg.textContent = 'Error conectando: ' + (err.message || 'Verifica la URL y la Key o que la tabla historial_facturas exista.');
+      }
+    };
+
+    async function sincronizarDesdeSupabase() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient.from('historial_facturas').select('*').order('created_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const idMap = new Set(historialGuardado.map(x => String(x.id)));
+          let nuevos = 0;
+          data.forEach(row => {
+            const item = row.datos || { id: row.id, fecha: row.fecha, nit: row.nit, empresa: row.cliente, valor: row.total };
+            if (!idMap.has(String(item.id))) {
+              historialGuardado.push(item);
+              idMap.add(String(item.id));
+              nuevos++;
+            }
+          });
+          if (nuevos > 0) {
+            localStorage.setItem('lgc_historial_v1', JSON.stringify(historialGuardado));
+            actualizarBadgeHistorial();
+            renderHistorial();
+            console.log(`Sincronizados ${nuevos} registros desde Supabase.`);
+          }
+        }
+      } catch(e) {
+        console.warn('Error sincronizando desde Supabase:', e);
+      }
+    }
+
+    async function sincronizarHaciaSupabase(item) {
+      if (!supabaseClient) return;
+      try {
+        await supabaseClient.from('historial_facturas').upsert({
+          id: String(item.id),
+          user_email: EMAIL_AUTORIZADO,
+          fecha: item.fecha || '',
+          nit: item.nit || '',
+          cliente: item.empresa || '',
+          total: Number(item.valor) || 0,
+          datos: item
+        });
+      } catch(e) {
+        console.warn('Error enviando a Supabase:', e);
+      }
+    }
+
+    async function eliminarEnSupabase(id) {
+      if (!supabaseClient) return;
+      try {
+        await supabaseClient.from('historial_facturas').delete().eq('id', String(id));
+      } catch(e) {
+        console.warn('Error borrando en Supabase:', e);
+      }
+    }
+
     // Inicializar fechas
     (function initApp() {
       const hoy = new Date();
@@ -426,6 +680,7 @@
       const savedKey = localStorage.getItem('lgc_gemini_key');
       if (savedKey) document.getElementById('geminiApiKey').value = savedKey;
 
+      verificarSesionActiva();
       actualizarBadgeHistorial();
       listaPazYSalvos = [{
         fechaEmision: document.getElementById('pysFechaCert').value,
@@ -630,6 +885,7 @@
         facturaData: JSON.parse(JSON.stringify(fac))
       };
       historialGuardado.unshift(registro);
+      sincronizarHaciaSupabase(registro);
       if (historialGuardado.length > 300) historialGuardado.pop();
       localStorage.setItem('lgc_historial_v1', JSON.stringify(historialGuardado));
       actualizarBadgeHistorial();
@@ -931,6 +1187,7 @@
     window.eliminarRegistroHistorial = function(id) {
       if (confirm('¿Deseas eliminar este registro del historial?')) {
         historialGuardado = historialGuardado.filter(x => String(x.id) !== String(id));
+        eliminarEnSupabase(id);
         localStorage.setItem('lgc_historial_v1', JSON.stringify(historialGuardado));
         actualizarBadgeHistorial();
         renderHistorial();
