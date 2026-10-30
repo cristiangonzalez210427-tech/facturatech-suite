@@ -365,7 +365,7 @@ Santa Teresita, 18000000
               <option value="refrigerios_sin_barrera">🥤 Refrigerios Sin Barrera (Leche, Yogurt, Pan, Queso, Frutas)</option>
               <option value="refrigerios_lumed">🥤 Refrigerios LUMED (Leche, Huevos, Pan)</option>
               <option value="refrigerios_base">🥤 Refrigerios General (Bebida láctea, Panadería, Fruta, Huevo)</option>
-              <option value="rpp">📦 RPP (Ración para Preparar - Arroz, Huevos, Leche, Pasta, Harina, Lenteja)</option>
+              <option value="rpp">📦 RPP Faca Anny / Los Ositos (113 Paquetes: Arroz, Leche, Arepa, Spaghetti, Arverja, Huevos)</option>
             </select>
           </div>
           <div>
@@ -380,6 +380,14 @@ Santa Teresita, 18000000
             <button type="button" class="btn" style="width:100%; justify-content:center;" onclick="agregarFacturaProporcional()">+ Calcular 1 Proporcional</button>
             <button type="button" class="btn-sec" style="width:100%; justify-content:center; margin-top:4px; font-size:11.5px;" onclick="abrirModalPegarLote()">⚡ Pegar Lote de Valores (Varios Clientes)</button>
           </div>
+        </div>
+        <div style="margin-top:12px; padding-top:10px; border-top:1px dashed #e2e8f0; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span style="font-size:12px; font-weight:700; color:#64748b;">⚡ Accesos Rápidos Frecuentes:</span>
+          <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('rpp_contrato')">📦 RPP Faca Anny ($3.126.710 - 113 Paq)</button>
+          <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('rpp_base')">📦 RPP Base Alimentos ($2.700.700 - 113 Paq)</button>
+          <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('cosecha_faca')">🌾 Cosecha Faca Anny ($8.528.100)</button>
+          <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('refri_1075')">🥤 Refrigerios 1075 ($1.004.512)</button>
+          <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('refri_1077')">🥤 Refrigerios 1077 ($1.087.943)</button>
         </div>
       </div>
 
@@ -605,12 +613,12 @@ Santa Teresita, 18000000
         { prefijo: 'PAN', descripcion: 'PAN UNIDAD 40 GR', unidad: '94', valorUnitario: 850, ivaPct: 0, pesoRelativo: 0.30, cantBase: 2271 }
       ],
       'rpp': [
-        { prefijo: 'ARR', descripcion: 'Arroz blanco', unidad: 'LBR', valorUnitario: 2350, ivaPct: 0, pesoRelativo: 0.15, cantBase: 226 },
-        { prefijo: 'HUE', descripcion: 'Huevo de gallina AA', unidad: '94', valorUnitario: 550, ivaPct: 0, pesoRelativo: 0.25, cantBase: 1695 },
-        { prefijo: 'LEC', descripcion: 'Leche líquida', unidad: '94', valorUnitario: 4800, ivaPct: 0, pesoRelativo: 0.28, cantBase: 226 },
-        { prefijo: 'PAS', descripcion: 'SPAGUETTI', unidad: 'LBR', valorUnitario: 4285.71, ivaPct: 5, pesoRelativo: 0.12, cantBase: 113 },
-        { prefijo: 'HAR', descripcion: 'HARINA DE MAIZ', unidad: 'KGM', valorUnitario: 6333.33, ivaPct: 5, pesoRelativo: 0.10, cantBase: 113 },
-        { prefijo: 'LEN', descripcion: 'LENTEJA', unidad: 'LBR', valorUnitario: 3900, ivaPct: 0, pesoRelativo: 0.10, cantBase: 113 }
+        { prefijo: 'ARR', descripcion: 'ARROZ', unidad: 'LBR', valorUnitario: 2300, ivaPct: 0, pesoRelativo: 0.10, cantBase: 113, ratioPack: 1 },
+        { prefijo: 'LEC', descripcion: 'LECHE LIQUIDA', unidad: 'LTR', valorUnitario: 5200, ivaPct: 0, pesoRelativo: 0.22, cantBase: 113, ratioPack: 1 },
+        { prefijo: 'ARE', descripcion: 'AREPA AREPA', unidad: 'LBR', valorUnitario: 2300, ivaPct: 0, pesoRelativo: 0.10, cantBase: 113, ratioPack: 1 },
+        { prefijo: 'SPA', descripcion: 'SPAGUETTI', unidad: 'PA', valorUnitario: 2050, ivaPct: 0, pesoRelativo: 0.08, cantBase: 113, ratioPack: 1 },
+        { prefijo: 'ARV', descripcion: 'ARVERJA VERDE SECA', unidad: 'LBR', valorUnitario: 2300, ivaPct: 0, pesoRelativo: 0.10, cantBase: 113, ratioPack: 1 },
+        { prefijo: 'HUE', descripcion: 'HUEVO', unidad: '94', valorUnitario: 650, ivaPct: 0, pesoRelativo: 0.40, cantBase: 1695, ratioPack: 15 }
       ],
       'general': [
         { prefijo: 'LEC', descripcion: 'LECHE UHT LARGA VIDA X 200ML', unidad: '94', valorUnitario: 1177.67, ivaPct: 0.19, pesoRelativo: 0.35, cantBase: 350 },
@@ -671,6 +679,12 @@ Santa Teresita, 18000000
         select.value = 'sin_huevos';
         if (infoBadge) {
           infoBadge.textContent = '🥚 Perfil detectado para Sin Barrera: Abarrotes Sin Huevos';
+          infoBadge.style.display = 'block';
+        }
+      } else if (nit === '800136100' || nomUpper.includes('OSITOS') || nomUpper.includes('FACA')) {
+        select.value = 'rpp';
+        if (infoBadge) {
+          infoBadge.textContent = '📦 Perfil detectado para Asociación Los Ositos (Faca Anny): RPP (113 Paquetes exactos)';
           infoBadge.style.display = 'block';
         }
       } else if (nit === '901753677' || nomUpper.includes('APOSENTO')) {
@@ -904,6 +918,45 @@ Santa Teresita, 18000000
       }
     }
 
+    window.cargarPresetRapido = function(tipo) {
+      if (tipo === 'rpp_contrato') {
+        document.getElementById('propClienteInput').value = 'ASOCIACION LOS OSITOS';
+        document.getElementById('propNit').value = '800136100';
+        document.getElementById('propTipoCanasta').value = 'rpp';
+        document.getElementById('propValor').value = '3126710';
+        document.getElementById('propContrato').value = 'CONTRATO RPP (113 PAQUETES)';
+        agregarFacturaProporcional();
+      } else if (tipo === 'rpp_base') {
+        document.getElementById('propClienteInput').value = 'ASOCIACION LOS OSITOS';
+        document.getElementById('propNit').value = '800136100';
+        document.getElementById('propTipoCanasta').value = 'rpp';
+        document.getElementById('propValor').value = '2700700';
+        document.getElementById('propContrato').value = 'CONTRATO RPP BASE ALIMENTOS (113 PAQUETES)';
+        agregarFacturaProporcional();
+      } else if (tipo === 'cosecha_faca') {
+        document.getElementById('propClienteInput').value = 'ASOCIACION LOS OSITOS';
+        document.getElementById('propNit').value = '800136100';
+        document.getElementById('propTipoCanasta').value = 'completo';
+        document.getElementById('propValor').value = '8528100';
+        document.getElementById('propContrato').value = 'CONTRATO COSECHA';
+        agregarFacturaProporcional();
+      } else if (tipo === 'refri_1075') {
+        document.getElementById('propClienteInput').value = 'ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR CHAPARRAL LA LLANURITA';
+        document.getElementById('propNit').value = '800141359';
+        document.getElementById('propTipoCanasta').value = 'refrigerios_1075';
+        document.getElementById('propValor').value = '1004512';
+        document.getElementById('propContrato').value = 'CONTRATO 1075 LA MESA REFRIS';
+        agregarFacturaProporcional();
+      } else if (tipo === 'refri_1077') {
+        document.getElementById('propClienteInput').value = 'ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR SANTA TERESITA';
+        document.getElementById('propNit').value = '800231495';
+        document.getElementById('propTipoCanasta').value = 'refrigerios_1077';
+        document.getElementById('propValor').value = '1087943';
+        document.getElementById('propContrato').value = 'CONTRATO 1077 GIRARDOT REFRIS';
+        agregarFacturaProporcional();
+      }
+    };
+
     // Inicializar fechas
     (function initApp() {
       const hoy = new Date();
@@ -1021,6 +1074,80 @@ Santa Teresita, 18000000
     }
 
     function ajustarAFin(fac, valRaw) {
+      if (fac.tipoCanasta === 'rpp') {
+        // En RPP los paquetes son sagrados y las cantidades deben coincidir exactamente con el número de paquetes.
+        let numPaquetes = 113; // default oficial Faca Anny / Los Ositos
+        const mPaq = (fac.contrato || '').match(/(\d+)\s*(?:PAQ|PAQUETE|RPP)/i);
+        if (mPaq) {
+          numPaquetes = parseInt(mPaq[1], 10);
+        } else if (valRaw) {
+          if (Math.abs(valRaw - 3126710) < 100 || Math.abs(valRaw - 2700700) < 100) {
+            numPaquetes = 113;
+          } else if (valRaw > 100000) {
+            const p27 = Math.round(valRaw / 27670);
+            const p23 = Math.round(valRaw / 23900);
+            numPaquetes = (Math.abs(valRaw - p27 * 27670) < Math.abs(valRaw - p23 * 23900)) ? p27 : p23;
+          }
+        }
+        if (!numPaquetes || numPaquetes <= 0) numPaquetes = 113;
+
+        // Fijar cantidades exactas según paquetes (1 lb arroz, 1 L leche, 1 lb arepa, 1 paq spaghetti, 1 lb arverja, 15 huevos)
+        fac.items.forEach(it => {
+          const ratio = (it.prefijo === 'HUE' || (it.descripcion || '').includes('HUEVO')) ? 15 : 1;
+          it.cantidad = numPaquetes * ratio;
+        });
+
+        // Caso exacto 113 paquetes por $3.126.710 ($27.670/paquete contractual Faca Anny)
+        if (numPaquetes === 113 && Math.abs(valRaw - 3126710) <= 5) {
+          const arr = fac.items.find(i => i.prefijo === 'ARR' || (i.descripcion || '').includes('ARROZ'));
+          const lec = fac.items.find(i => i.prefijo === 'LEC' || (i.descripcion || '').includes('LECHE'));
+          const are = fac.items.find(i => i.prefijo === 'ARE' || (i.descripcion || '').includes('AREPA'));
+          const spa = fac.items.find(i => i.prefijo === 'SPA' || (i.descripcion || '').includes('SPAGUETTI'));
+          const arv = fac.items.find(i => i.prefijo === 'ARV' || (i.descripcion || '').includes('ARVERJA'));
+          const hue = fac.items.find(i => i.prefijo === 'HUE' || (i.descripcion || '').includes('HUEVO'));
+          if (arr) arr.valorUnitario = 2670;
+          if (lec) lec.valorUnitario = 6040;
+          if (are) are.valorUnitario = 2670;
+          if (spa) spa.valorUnitario = 2370;
+          if (arv) arv.valorUnitario = 2670;
+          if (hue) hue.valorUnitario = 750;
+          return;
+        }
+
+        // Caso exacto 113 paquetes por $2.700.700 ($23.900/paquete base alimentos)
+        if (numPaquetes === 113 && Math.abs(valRaw - 2700700) <= 5) {
+          const arr = fac.items.find(i => i.prefijo === 'ARR' || (i.descripcion || '').includes('ARROZ'));
+          const lec = fac.items.find(i => i.prefijo === 'LEC' || (i.descripcion || '').includes('LECHE'));
+          const are = fac.items.find(i => i.prefijo === 'ARE' || (i.descripcion || '').includes('AREPA'));
+          const spa = fac.items.find(i => i.prefijo === 'SPA' || (i.descripcion || '').includes('SPAGUETTI'));
+          const arv = fac.items.find(i => i.prefijo === 'ARV' || (i.descripcion || '').includes('ARVERJA'));
+          const hue = fac.items.find(i => i.prefijo === 'HUE' || (i.descripcion || '').includes('HUEVO'));
+          if (arr) arr.valorUnitario = 2300;
+          if (lec) lec.valorUnitario = 5200;
+          if (are) are.valorUnitario = 2300;
+          if (spa) spa.valorUnitario = 2050;
+          if (arv) arv.valorUnitario = 2300;
+          if (hue) hue.valorUnitario = 650;
+          return;
+        }
+
+        // Caso general proporcional para RPP: mantener cantidades en paquetes y escalar precios unitarios
+        const totalBase = calcularTotalItems(fac.items);
+        const factor = valRaw / (totalBase || 1);
+        fac.items.forEach(it => {
+          it.valorUnitario = Math.round(it.valorUnitario * factor);
+        });
+
+        const diff = valRaw - calcularTotalItems(fac.items);
+        if (diff !== 0) {
+          const itAjuste = fac.items.find(i => i.prefijo === 'LEC' || (i.descripcion || '').includes('LECHE')) || fac.items[0];
+          if (itAjuste && itAjuste.cantidad > 0) {
+            itAjuste.valorUnitario = Math.round((itAjuste.valorUnitario + (diff / itAjuste.cantidad)) * 100) / 100;
+          }
+        }
+        return;
+      }
+
       const indicesActivos = [];
       fac.items.forEach((it, idx) => { if (it.activo) indicesActivos.push(idx); });
       if (indicesActivos.length === 0) return;
