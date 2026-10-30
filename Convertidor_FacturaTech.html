@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suite LGC — FacturaTech + Paz y Salvo + Historial + IA</title>
+  <style>
+    :root {
+      --primary: #d91e48;
+      --primary-dark: #b01437;
+      --secondary: #1e293b;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --ok: #15803d;
+      --warn: #b45309;
+      --ai: #6d28d9;
+    }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    .topbar {
+      background: var(--secondary); color: #fff; padding: 14px 24px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+      position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+    .brand span { background: var(--primary); padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+    .nav-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .nav-btn {
+      background: rgba(255,255,255,0.08); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.15);
+      padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.16); color: #fff; }
+    .nav-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .nav-btn.ai-tab.active { background: var(--ai); border-color: var(--ai); }
+
+    .container { max-width: 1220px; margin: 22px auto; padding: 0 18px; }
+    .card {
+      background: var(--card); border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 18px; border: 1px solid #e2e8f0;
+    }
+    .card-title { margin: 0 0 14px; font-size: 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end; }
+    label { display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; }
+    input[type="text"], input[type="number"], input[type="date"], input[type="password"], select, textarea {
+      width: 100%; padding: 8px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; background: #fff;
+    }
+    /* Buscador interactivo de asociaciones */
+    .search-wrap { position: relative; }
+    .search-results {
+      position: absolute; top: 100%; left: 0; right: 0; background: #fff;
+      border: 1px solid var(--border); border-radius: 8px; max-height: 240px; overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 100; display: none; margin-top: 4px;
+    }
+    .search-item {
+      padding: 8px 12px; font-size: 12.5px; cursor: pointer; border-bottom: 1px solid #f1f5f9;
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .search-item:hover { background: #fff1f2; color: var(--primary); font-weight: 600; }
+    .search-item .nit-pill { background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 6px; font-weight: 700; font-size: 11px; white-space: nowrap; }
+
+    .btn {
+      background: var(--primary); color: #fff; border: none; padding: 9px 16px;
+      border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .btn-sec { background: #334155; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn-sec:hover { background: #1e293b; }
+    .btn-ok { background: var(--ok); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn-ai { background: var(--ai); color: #fff; border: none; padding: 9px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+    th, td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+    th { background: #f8fafc; font-weight: 700; color: var(--muted); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0369a1; }
+    .badge-ok { background: #dcfce7; color: #166534; }
+    .badge-warn { background: #fef3c7; color: #92400e; }
+    .qty-input { width: 76px; padding: 4px 6px; text-align: right; font-weight: 700; }
+
+    .dropzone {
+      border: 2px dashed #94a3b8; border-radius: 12px; background: #f8fafc;
+      padding: 24px 16px; text-align: center; cursor: pointer; transition: 0.2s;
+    }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--primary); background: #fff5f7; }
+
+    /* Vista previa de Paz y Salvo */
+    .pys-preview-wrap {
+      background: #cbd5e1; padding: 24px; border-radius: 12px; display: flex; justify-content: center; overflow-x: auto;
+    }
+    .pys-sheet {
+      width: 215.9mm; min-height: 279.4mm; background: #fff; padding: 22mm 24mm;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.2); color: #111; font-family: Arial, Helvetica, sans-serif;
+      position: relative; box-sizing: border-box;
+    }
+    .pys-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .pys-date { font-size: 12px; font-weight: bold; line-height: 1.45; margin-top: 12px; }
+    .pys-logo { width: 155px; height: auto; }
+    .pys-title { text-align: center; font-size: 14px; font-weight: bold; margin: 18px 0 22px; }
+    .pys-emp { text-align: center; font-size: 13px; font-weight: bold; line-height: 1.4; margin-bottom: 28px; }
+    .pys-stmt { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 18px; }
+    .pys-sum-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; font-size: 12px; margin-bottom: 14px; }
+    .pys-mte-row { text-align: center; font-size: 12px; font-weight: bold; margin: 14px 0 22px; }
+    .pys-table { width: 320px; margin: 0 auto 30px; border-collapse: collapse; font-size: 11px; }
+    .pys-table th, .pys-table td { border: 1px solid #000; padding: 4px 7px; }
+    .pys-table th { background: #d9d9d9; font-weight: bold; text-align: left; }
+    .pys-yellow { background: #ffff00; font-weight: bold; text-align: right; }
+    .pys-sign { margin-top: 36px; font-size: 12px; line-height: 1.4; }
+    .pys-sign img { width: 150px; height: auto; display: block; margin: 6px 0 2px; }
+
+    /* Chat IA */
+    .chat-box { height: 340px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: #f8fafc; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45; }
+    .msg.user { align-self: flex-end; background: var(--ai); color: #fff; border-bottom-right-radius: 2px; }
+    .msg.bot { align-self: flex-start; background: #fff; border: 1px solid var(--border); border-bottom-left-radius: 2px; }
+
+    @media print {
+      body * { visibility: hidden !important; }
+      #printArea, #printArea * { visibility: visible !important; }
+      #printArea { position: fixed; left: 0; top: 0; width: 100%; margin: 0; padding: 0; background: #fff; }
+      .pys-sheet { box-shadow: none !important; width: 100% !important; min-height: auto !important; padding: 15mm 18mm !important; page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <h1>SUITE FACTURACIÓN & PAZ Y SALVO</h1>
+      <span>FacturaTech 73 Col + IA Gemini</span>
+    </div>
+    <div class="nav-tabs">
+      <button type="button" class="nav-btn active" id="nav-facturas" onclick="mostrarVista('facturas')">1. Facturador FacturaTech</button>
+      <button type="button" class="nav-btn" id="nav-pazysalvo" onclick="mostrarVista('pazysalvo')">2. Crear Paz y Salvo (PDF/CSV)</button>
+      <button type="button" class="nav-btn" id="nav-historial" onclick="mostrarVista('historial')">3. Historial Guardado (<span id="badgeCount">0</span>)</button>
+      <button type="button" class="nav-btn ai-tab" id="nav-ia" onclick="mostrarVista('ia')">✨ Copiloto IA (Gemini)</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- ================= VISTA 1: FACTURADOR ================= -->
+    <div id="vista-facturas">
+      <div class="card">
+        <div class="card-title">
+          <span>A. Crear Factura Proporcional por Valor Total (39 Ítems sin decimales en cantidades)</span>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <label style="margin:0;">Vencimiento:</label>
+            <input type="date" id="fechaVenc" style="width:155px;" />
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="search-wrap" style="grid-column: span 2;">
+            <label>Asociación / Cliente (Escribe ej: "sin barrera", "chaparral" o haz clic para ver las 51):</label>
+            <input type="text" id="propClienteInput" autocomplete="off" placeholder="Escribe cualquier parte del nombre o NIT..." onfocus="filtrarEmpresas('propClienteInput', 'resProp', 'propNit')" oninput="filtrarEmpresas('propClienteInput', 'resProp', 'propNit')" />
+            <div class="search-results" id="resProp"></div>
+          </div>
+          <div>
+            <label>NIT (sin dígito):</label>
+            <input type="text" id="propNit" value="900244596" placeholder="Ej: 900244596" />
+          </div>
+          <div>
+            <label>Valor Total Objetivo ($):</label>
+            <input type="text" id="propValor" placeholder="Ej: 51804548" style="font-weight:700;" />
+          </div>
+          <div>
+            <label>Contrato / Nota:</label>
+            <input type="text" id="propContrato" placeholder="Ej: CONTRATO 1075" />
+          </div>
+          <div>
+            <button type="button" class="btn" style="width:100%; justify-content:center;" onclick="agregarFacturaProporcional()">+ Calcular Proporcional</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>B. O Cargar / Pegar Tablas desde Excel (.xlsx / Ctrl+V)</span>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+          <div class="dropzone" id="dropzone">
+            <strong style="color:var(--primary); font-size:14.5px;">Haz clic o arrastra aquí tus archivos Excel (.xlsx / .csv)</strong>
+            <p style="margin:6px 0 0; font-size:12.5px; color:var(--muted);">Extrae todas las facturas, NITs, unidades e IVA (5% y 19%)</p>
+            <input type="file" id="fileInput" accept=".xlsx,.csv,.txt" multiple style="display:none" />
+            <div id="statusArchivo" style="margin-top:8px; font-size:12.5px; font-weight:700; color:var(--ok);"></div>
+          </div>
+          <div>
+            <textarea id="txtPaste" style="height:82px; margin-bottom:8px;" placeholder="O selecciona las celdas en Excel, copia (Ctrl+C) y pega aquí (Ctrl+V)..."></textarea>
+            <button type="button" class="btn-sec" onclick="procesarTextoPegado()">Procesar Celdas Pegadas</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="barraAccionesFacturas" style="display:none; background:#0f172a; color:#fff;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <strong id="resumenLoteActual" style="font-size:15px;">0 Facturas en mesa de trabajo</strong>
+            <div style="font-size:12px; color:#94a3b8;">Todas se guardan automáticamente en tu Historial al descargar o generar Paz y Salvo.</div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn" onclick="descargarGuardarTodoCSV()">⬇ Guardar y Descargar CSV FacturaTech (Todas)</button>
+            <button type="button" class="btn-ok" onclick="enviarLoteAPazYSalvo()">📄 Generar Paz y Salvo de estas Facturas</button>
+            <button type="button" class="btn-sec" onclick="limpiarMesaFacturas()">Limpiar Mesa</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="contenedorFacturas"></div>
+    </div>
+
+    <!-- ================= VISTA 2: PAZ Y SALVO ================= -->
+    <div id="vista-pazysalvo" style="display:none;">
+      <div class="card">
+        <div class="card-title">
+          <span>Generador Oficial de Paz y Salvo (Con Logo, Firma y Suma en Letras Automática)</span>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn" onclick="imprimirPazYSalvos()">🖨 Imprimir / Guardar PDF</button>
+            <button type="button" class="btn-sec" onclick="descargarCsvPazYSalvo()">⬇ Exportar Plantilla_PazYSalvo.csv</button>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="search-wrap" style="grid-column: span 2;">
+            <label>Asociación / Empresa (Escribe ej: "sin barrera", "chaparral" o NIT):</label>
+            <input type="text" id="pysEmpresa" autocomplete="off" placeholder="Escribe para buscar entre las 51 asociaciones..." onfocus="filtrarEmpresas('pysEmpresa', 'resPys', 'pysNit')" oninput="filtrarEmpresas('pysEmpresa', 'resPys', 'pysNit')" />
+            <div class="search-results" id="resPys"></div>
+          </div>
+          <div>
+            <label>NIT:</label>
+            <input type="text" id="pysNit" placeholder="Ej: 800141359" />
+          </div>
+          <div>
+            <label>No. Factura (Ej: LC871):</label>
+            <input type="text" id="pysFacturaId" value="LC871" />
+          </div>
+          <div>
+            <label>Mes Escrito:</label>
+            <select id="pysMes">
+              <option value="ENERO">ENERO</option><option value="FEBRERO">FEBRERO</option><option value="MARZO">MARZO</option>
+              <option value="ABRIL">ABRIL</option><option value="MAYO">MAYO</option><option value="JUNIO">JUNIO</option>
+              <option value="JULIO">JULIO</option><option value="AGOSTO">AGOSTO</option><option value="SEPTIEMBRE">SEPTIEMBRE</option>
+              <option value="OCTUBRE" selected>OCTUBRE</option><option value="NOVIEMBRE">NOVIEMBRE</option><option value="DICIEMBRE">DICIEMBRE</option>
+            </select>
+          </div>
+          <div>
+            <label>Fecha Certificado:</label>
+            <input type="text" id="pysFechaCert" />
+          </div>
+          <div>
+            <label>Valor Total ($):</label>
+            <input type="text" id="pysValor" placeholder="Ej: 7082900" oninput="actualizarPreviaSumaLetras()" style="font-weight:700;" />
+          </div>
+          <div style="grid-column: span 2;">
+            <label>Suma en Letras (Generada automáticamente, editable):</label>
+            <input type="text" id="pysSumaLetras" placeholder="SIETE MILLONES OCHENTA Y DOS MIL NOVECIENTOS PESOS" />
+          </div>
+          <div>
+            <button type="button" class="btn-ok" style="width:100%; justify-content:center;" onclick="agregarPazYSalvoManual()">+ Agregar Paz y Salvo</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="listaPysCard" style="display:none;">
+        <div class="card-title">
+          <span>Certificados listos en vista previa (<span id="countPysListos">0</span>)</span>
+          <button type="button" class="btn-sec" onclick="listaPazYSalvos=[]; renderPazYSalvos();">Limpiar Certificados</button>
+        </div>
+      </div>
+
+      <div class="pys-preview-wrap">
+        <div id="printArea"></div>
+      </div>
+    </div>
+
+    <!-- ================= VISTA 3: HISTORIAL ================= -->
+    <div id="vista-historial" style="display:none;">
+      <div class="card">
+        <div class="card-title">
+          <span>Historial Guardado de Facturas y Paz y Salvos</span>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="buscarHistorial" placeholder="Buscar por NIT, asociación, contrato o fecha..." oninput="renderHistorial()" style="width:280px;" />
+            <button type="button" class="btn-sec" onclick="exportarRespaldoJSON()">⬇ Exportar Copia Seguridad (.json)</button>
+            <button type="button" class="btn-sec" onclick="document.getElementById('importJsonInput').click()">⬆ Restaurar Copia (.json)</button>
+            <input type="file" id="importJsonInput" accept=".json" style="display:none" onchange="importarRespaldoJSON(event)" />
+          </div>
+        </div>
+        <div id="contenedorHistorial"></div>
+      </div>
+    </div>
+
+    <!-- ================= VISTA 4: COPILOTO IA GEMINI ================= -->
+    <div id="vista-ia" style="display:none;">
+      <div class="card">
+        <div class="card-title">
+          <span>✨ Copiloto IA con Google Gemini 2.5 Flash</span>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <label style="margin:0;">API Key Gemini:</label>
+            <input type="password" id="geminiApiKey" value="" style="width:240px;" onchange="guardarApiKey()" />
+          </div>
+        </div>
+        <div class="chat-box" id="chatBox">
+          <div class="msg bot">
+            ¡Hola! Soy tu asistente conectado a <strong>Gemini 2.5 Flash</strong>. Puedo crear facturas proporcionales (sin decimales en cantidades), convertir textos en facturas de 73 columnas o armar tus Paz y Salvos automáticamente.<br><br>
+            <strong>Ejemplos que puedes pedirme:</strong><br>
+            • <em>"Créame una factura proporcional para Fundación Sin Barrera por $24.500.000 y otra para Chaparral por $11.200.000"</em><br>
+            • <em>"Hazme el Paz y Salvo de Octubre para Aposentos factura LC890 por $16.979.205"</em>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="chatInput" placeholder="Escribe tu orden aquí (ej: Hazme factura proporcional para Sin Barrera por 18 millones)..." onkeydown="if(event.key==='Enter') enviarMensajeIA()" />
+          <button type="button" class="btn-ai" id="btnEnviarIA" onclick="enviarMensajeIA()">Enviar a Gemini ✨</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LOGO_BASE64 = "data:image/png;base64,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";
+    const FIRMA_BASE64 = "data:image/png;base64,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";
+    const DIRECTORIO_EMPRESAS = {"800141359": "ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR CHAPARRAL LA LLANURITA", "800231495": "ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR SANTA TERESITA", "901753677": "ASOCIACION CAMPESINA APOSENTOS BOJACA A.C.A.B", "900244596": "FUNDACION SIN BARRERA", "800062616": "ASOCIACION DE PADRES USUARIOS DE HOGARES DE BIENESTAR", "800061516": "ASOCIACION DE USUARIOS DEL PROGRAMA DE HOGARES DE BIENESTAR EL BARRIO EL CODITO", "800063373": "ASOCIACION DE MADRES COMUNITARIAS Y PADRES USUARIOS DE HOGARES DE BIENESTAR DEL BARRIO PINARES DE SAN CRISTOBAL", "800063693": "ASOCIACION DE PADRES DE FAMILIA Y MADRES COMUNITARIAS DE LOS HOGARES DE BIENESTAR DEL BARRIO LA GLORIA Y SAN JACINTO", "800063694": "ASOCIACION DE MADRES COMUNITARIAS Y PADRES USUARIOS DE HOGARES DE BIENESTAR LA YE", "900191343": "ASOCIACION DE PADRES USUARIOS Y MADRES COMUNITARIAS DESPERTAR DEL MAÑANA MULTIPLE -ASDEMA", "800183178": "ASOCIACION DE MADRES COMUNITARIAS Y PADRES DE LOS HOGARES DE BIENESTAR GENERACION 2000", "800229362": "ASOCIACION DE PADRES USUARIOS DE HOGARES DE BIENESTAR DE LOS BARRIOS VERBENAL Y REFUGIO", "800145628": "ASOCIACION DE MADRES COMUNITARIAS Y PADRES DE HOGARES DE BIENESTAR NUEVA SANTAFE", "800142623": "ASOCIACION DE PADRES USUARIOS DE HOGARES DE BIENESTAR ASONUTRIDEN", "800145094": "ASOCIACION DE PADRES DE HOGARES DE BIENESTAR NUEVO RENACER", "800141256": "ASOCIACION DE PADRES DE HOGARES DE BIENESTAR ZONA 11", "830036389": "ASOCIACION DE PADRES DE FAMILIA USUARIOS DE LOS HOGARES COMUNITARIOS DE BIENESTAR NIÑOS SIGLO XXI", "800087934": "ASOCIACION DE PADRES DE HOGARES COMUNITARIOS DE BIENESTAR COSTA AZUL", "900259369": "ASOCIACION DE PADRES USUARIOS Y MADRES COMUNITARIAS ANGELES DEL FUTURO GAITANA 4", "800143399": "ASOCIACION DE PADRES DE HOGARES COMUNITARIOS DE BIENESTAR PUERTA DEL SOL", "800071858": "ASOCIACION DE PADRES DE HOGARES DE BIENESTAR FAMILIAR JUGRACACIS", "800061953": "ASOCIACION DE PADRES USUARIOS DE HOGARES DE BIENESTAR DEL BARRIO NUEVA ZELANDIA", "800146001": "ASOCIACION DE PADRES DE HOGARES DE BIENESTAR EL HIJO FELIZ", "800137234": "ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR PANTANITOS Y JARDIN", "800124288": "ASOCIACION DE PADRES USUARIOS DE LOS HOGARES DE BIENESTAR BRISAS DE BUENAVISTA", "800060957": "ASOCIACION DE PADRES DE FAMILIA HOGARES DE BIENESTAR BARRIO CANAIMA", "800060961": "ASOCIACION DE USUARIOS DEL PROGRAMA HOGARES DE BIENESTAR DEL BARRIO BUENAVISTA", "800143030": "ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR PROGRESO INFANTIL", "800110619": "ASOCIACION DE MADRES COMUNITARIAS Y PADRES USUARIOS DE LA ASOCIACION BARRIOS UNIDOS", "800144385": "ASOCIACION DE PADRES USUARIOS COMUNITARIOS DE BIENESTAR DELICIAS DEL CARMEN", "800112895": "ASOCIACION DE PADRES USUARIOS DE LOS HOGARES DE BIENESTAR BARRIOS UNIDOS DEL NORTE SAN CRISTOBAL", "800116709": "ASOCIACION DE PADRES DE HOGARES DE BIENESTAR BENEFAT", "800177785": "ASOCIACION DE PADRES USUARIOS DE HOGARES DE BIENESTAR VIDA Y FUTURO DE LA NIÑEZ", "804017278": "FUNDACION PARA EL FOMENTO, DESARROLLO Y BIENESTAR DE LA C", "800230854": "ASOCIACION DE PADRES DE FAMILIA USUARIOS DE HOGARES DE BIENESTAR EDUCAR Y FORMAR", "830029334": "ASOCIACION DE USUARIOS DEL PROGRAMA HOGARES DE BIENESTAR SECTOR CASALOMA RINCON DE GALICIA Y PORVENIR DE LA ESTANCIA", "901121493": "ASOCIACION DE MADRES COMUNITARIAS Y PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR DEJANDO HUELLA", "800062544": "ASOCIACION DE MADRES COMUNITARIAS Y PADRES USUARIOS DE HOGARES DE BIENESTAR POTOSI", "800062890": "ASOCIACION DE PADRES DE HOGARES DE BIENESTAR EL ENSUEÑO", "830031443": "ASOCIACION DE PADRES DE HOGARES DE BIENESTAR FAMILIAR FUTUROS DE COLOMBIA", "800063330": "ASOCIACION DE PADRES USUARIOS DE HOGARES DE BIENESTAR LOS LACHES", "800143402": "ASOCIACION DE AGENTES EDUCATIVAS Y MADRES COMUNITARIAS FUTURO DE LA PLAYA", "901018058": "ASOCIACION DE MADRES COMUNITARIAS Y PADRES USUARIOS DE HOGARES AGRUPADOS UN MUNDO DE AMOR", "800061872": "ASOCIACION DE PADRES HOGARES DE BIENESTAR INFANCIA FELIZ SECTOR VILLA SUAITA", "800082246": "ASOCIACION DE PADRES USUARIOS DE LOS HOGARES DE BIENESTAR LA ISLA DEL SOL", "800177555": "ASOCIACION DE PADRES USUARIOS DE LOS HOGARES DE BIENESTAR FAMILIAR MALVINAS SAN MARTIN DE LOBA II SECTOR", "800137279": "ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR TOBERIN", "800138259": "ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR EL VERBENAL II", "800136100": "ASOCIACION LOS OSITOS", "800146527": "ASOCIACION DE PADRES DE USUARIOS DE HOGARES DE BIENESTAR NUEVO DESPERTAR", "901137853": "ASOCIACION ANGELES DE DIOS"};
+
+    const PLANTILLA_39_BASE = [
+      { cantBase: 394, prefijo: 'GAL', descripcion: 'GALLETA DE COCO', unidad: '94', valorUnitario: 870, ivaPct: 0 },
+      { cantBase: 587, prefijo: 'MAN', descripcion: 'MANTECADA', unidad: '94', valorUnitario: 650, ivaPct: 0 },
+      { cantBase: 375, prefijo: 'HOJ', descripcion: 'HOJALDRE', unidad: '94', valorUnitario: 390, ivaPct: 0 },
+      { cantBase: 187, prefijo: 'MOJ', descripcion: 'MOJICON', unidad: '94', valorUnitario: 390, ivaPct: 0 },
+      { cantBase: 936, prefijo: 'PAN', descripcion: 'PAN BLANDITO', unidad: '94', valorUnitario: 390, ivaPct: 0 },
+      { cantBase: 375, prefijo: 'PAN', descripcion: 'PAN', unidad: '94', valorUnitario: 390, ivaPct: 0 },
+      { cantBase: 749, prefijo: 'PAN', descripcion: 'PAN QUESO', unidad: '94', valorUnitario: 390, ivaPct: 0 },
+      { cantBase: 561, prefijo: 'MOG', descripcion: 'MOGOLLA', unidad: '94', valorUnitario: 390, ivaPct: 0 },
+      { cantBase: 15,  prefijo: 'TOS', descripcion: 'TOSTADA', unidad: 'PA', valorUnitario: 3900, ivaPct: 0 },
+      { cantBase: 15,  prefijo: 'PAN', descripcion: 'PAN TAJADO', unidad: 'PA', valorUnitario: 4600, ivaPct: 0 },
+      { cantBase: 188, prefijo: 'CRO', descripcion: 'CROISSANT', unidad: '94', valorUnitario: 390, ivaPct: 0 },
+      { cantBase: 2229,prefijo: 'HUE', descripcion: 'HUEVOS', unidad: '94', valorUnitario: 750, ivaPct: 0 },
+      { cantBase: 336, prefijo: 'LEC', descripcion: 'LECHE UHT LARGA VIDA', unidad: 'LTR', valorUnitario: 8100, ivaPct: 0 },
+      { cantBase: 82,  prefijo: 'YOG', descripcion: 'YOGURTH', unidad: 'LTR', valorUnitario: 16383.2, ivaPct: 19 },
+      { cantBase: 15,  prefijo: 'LEC', descripcion: 'LECHE UHT LARGA VIDA X 200ML', unidad: '94', valorUnitario: 1848.74, ivaPct: 19 },
+      { cantBase: 10,  prefijo: 'CAR', descripcion: 'CARNE DE CERDO', unidad: 'KGM', valorUnitario: 29800, ivaPct: 0 },
+      { cantBase: 82,  prefijo: 'CAR', descripcion: 'CARNE DE POLLO', unidad: 'KGM', valorUnitario: 24800, ivaPct: 0 },
+      { cantBase: 44,  prefijo: 'CAR', descripcion: 'CARNE DE RES', unidad: 'KGM', valorUnitario: 35700, ivaPct: 0 },
+      { cantBase: 28,  prefijo: 'CAR', descripcion: 'CARNE DE RES MAGRA', unidad: 'KGM', valorUnitario: 31900, ivaPct: 0 },
+      { cantBase: 6,   prefijo: 'HIG', descripcion: 'HIGADO DE RES', unidad: 'KGM', valorUnitario: 25100, ivaPct: 0 },
+      { cantBase: 6,   prefijo: 'MOL', descripcion: 'MOLLEJA DE POLLO', unidad: 'KGM', valorUnitario: 19450, ivaPct: 0 },
+      { cantBase: 46,  prefijo: 'QUE', descripcion: 'QUESO DOBLE CREMA TAJADO', unidad: 'KGM', valorUnitario: 18900, ivaPct: 0 },
+      { cantBase: 60,  prefijo: 'ACE', descripcion: 'ACEITE', unidad: 'LTR', valorUnitario: 10504.2, ivaPct: 19 },
+      { cantBase: 15,  prefijo: 'AJO', descripcion: 'AJONJOLI', unidad: 'PA', valorUnitario: 2478.99, ivaPct: 19 },
+      { cantBase: 324, prefijo: 'ARR', descripcion: 'ARROZ', unidad: 'LBR', valorUnitario: 2900, ivaPct: 0 },
+      { cantBase: 15,  prefijo: 'ARV', descripcion: 'ARVEJA', unidad: 'LBR', valorUnitario: 2950, ivaPct: 0 },
+      { cantBase: 120, prefijo: 'AZU', descripcion: 'AZUCAR', unidad: 'LBR', valorUnitario: 2809.52, ivaPct: 5 },
+      { cantBase: 15,  prefijo: 'CHO', descripcion: 'CHOCOLATE', unidad: '94', valorUnitario: 9190.48, ivaPct: 5 },
+      { cantBase: 15,  prefijo: 'FEC', descripcion: 'FECULA DE MAIZ', unidad: 'LBR', valorUnitario: 6816.81, ivaPct: 19 },
+      { cantBase: 14,  prefijo: 'FRI', descripcion: 'FRIJOL', unidad: 'LBR', valorUnitario: 11500, ivaPct: 0 },
+      { cantBase: 30,  prefijo: 'HAR', descripcion: 'HARINA DE MAIZ', unidad: 'LBR', valorUnitario: 4666.67, ivaPct: 5 },
+      { cantBase: 30,  prefijo: 'HAR', descripcion: 'HARINA DE TRIGO', unidad: 'LBR', valorUnitario: 4476.19, ivaPct: 5 },
+      { cantBase: 30,  prefijo: 'LEN', descripcion: 'LENTEJA', unidad: 'LBR', valorUnitario: 5200, ivaPct: 0 },
+      { cantBase: 75,  prefijo: 'PAN', descripcion: 'PANELA', unidad: '94', valorUnitario: 4800, ivaPct: 0 },
+      { cantBase: 30,  prefijo: 'FID', descripcion: 'FIDEOS CABELLO DE ANGEL', unidad: 'PA', valorUnitario: 2333.33, ivaPct: 5 },
+      { cantBase: 90,  prefijo: 'SPA', descripcion: 'SPAGUETTI', unidad: 'PA', valorUnitario: 3190.47, ivaPct: 5 },
+      { cantBase: 30,  prefijo: 'PAS', descripcion: 'PASTA ALIMENTICIA', unidad: 'PA', valorUnitario: 2269.52, ivaPct: 5 },
+      { cantBase: 33,  prefijo: 'SAL', descripcion: 'SAL', unidad: 'LBR', valorUnitario: 1528, ivaPct: 0 },
+      { cantBase: 15,  prefijo: 'VIN', descripcion: 'VINAGRE', unidad: 'VI', valorUnitario: 3193.47, ivaPct: 19 }
+    ];
+
+    let todasLasFacturas = [];
+    let listaPazYSalvos = [];
+    let historialGuardado = [];
+    try {
+      historialGuardado = JSON.parse(localStorage.getItem('lgc_historial_v1') || '[]');
+    } catch (e) { historialGuardado = []; }
+
+    // --- BUSCADOR EN VIVO DE ASOCIACIONES (BUSCA CUALQUIER PALABRA COMO "SIN BARRERA") ---
+    window.filtrarEmpresas = function(inputId, resultsId, nitInputId) {
+      const inp = document.getElementById(inputId);
+      const resDiv = document.getElementById(resultsId);
+      const q = (inp.value || '').trim().toLowerCase();
+
+      const entradas = Object.entries(DIRECTORIO_EMPRESAS).filter(([nit, nombre]) => {
+        if (!q) return true;
+        return nit.toLowerCase().includes(q) || nombre.toLowerCase().includes(q);
+      });
+
+      if (!entradas.length) {
+        resDiv.style.display = 'none';
+        return;
+      }
+
+      resDiv.innerHTML = entradas.map(([nit, nombre]) => {
+        const safeNombre = nombre.replace(/'/g, "\\'");
+        return `<div class="search-item" onmousedown="seleccionarEmpresa('${inputId}','${resultsId}','${nitInputId}','${nit}','${safeNombre}')">
+          <span>${nombre}</span>
+          <span class="nit-pill">NIT ${nit}</span>
+        </div>`;
+      }).join('');
+      resDiv.style.display = 'block';
+    };
+
+    window.seleccionarEmpresa = function(inputId, resultsId, nitInputId, nit, nombre) {
+      document.getElementById(inputId).value = nombre;
+      document.getElementById(nitInputId).value = nit;
+      document.getElementById(resultsId).style.display = 'none';
+    };
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-wrap')) {
+        document.querySelectorAll('.search-results').forEach(el => el.style.display = 'none');
+      }
+    });
+
+    // Inicializar fechas
+    (function initApp() {
+      const hoy = new Date();
+      const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+      const yyyy = ultimoDia.getFullYear();
+      const mm = String(ultimoDia.getMonth() + 1).padStart(2, '0');
+      const dd = String(ultimoDia.getDate()).padStart(2, '0');
+      document.getElementById('fechaVenc').value = `${yyyy}-${mm}-${dd}`;
+
+      const meses = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+      document.getElementById('pysFechaCert').value = `${String(hoy.getDate()).padStart(2,'0')} DE ${meses[hoy.getMonth()]} ${hoy.getFullYear()}`;
+
+      const savedKey = localStorage.getItem('lgc_gemini_key');
+      if (savedKey) document.getElementById('geminiApiKey').value = savedKey;
+
+      actualizarBadgeHistorial();
+      listaPazYSalvos = [{
+        fechaEmision: document.getElementById('pysFechaCert').value,
+        nombreEmpresa: 'ASOCIACION DE PADRES USUARIOS DE HOGARES COMUNITARIOS DE BIENESTAR CHAPARRAL LA LLANURITA',
+        nit: '800141359',
+        mes: 'OCTUBRE',
+        sumaLetras: 'SIETE MILLONES OCHENTA Y DOS MIL NOVECIENTOS PESOS',
+        facturaId: 'LC871',
+        cantidad: '1',
+        valorFormatted: '$ 7.082.900,00'
+      }];
+      renderPazYSalvos();
+    })();
+
+    window.mostrarVista = function(vista) {
+      ['facturas', 'pazysalvo', 'historial', 'ia'].forEach(v => {
+        document.getElementById('vista-' + v).style.display = (v === vista) ? 'block' : 'none';
+        document.getElementById('nav-' + v).classList.toggle('active', v === vista);
+      });
+      if (vista === 'historial') renderHistorial();
+    };
+
+    // --- CONVERSOR DE NÚMEROS A LETRAS EN ESPAÑOL (COLOMBIA) ---
+    function numeroALetras(num) {
+      num = Math.round(Number(num) || 0);
+      if (num === 0) return 'CERO PESOS';
+
+      const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+      const especiales = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISEIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+      const veintes = ['VEINTE', 'VEINTIUN', 'VEINTIDOS', 'VEINTITRES', 'VEINTICUATRO', 'VEINTICINCO', 'VEINTISEIS', 'VEINTISIETE', 'VEINTIOCHO', 'VEINTINUEVE'];
+      const decenas = ['', '', '', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+      const centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+      function menorMil(n) {
+        if (n === 0) return '';
+        if (n === 100) return 'CIEN';
+        const c = Math.floor(n / 100);
+        const r = n % 100;
+        let txt = c > 0 ? centenas[c] : '';
+        if (r > 0) {
+          if (txt) txt += ' ';
+          if (r < 10) txt += unidades[r];
+          else if (r < 20) txt += especiales[r - 10];
+          else if (r < 30) txt += veintes[r - 20];
+          else {
+            const d = Math.floor(r / 10);
+            const u = r % 10;
+            txt += decenas[d] + (u > 0 ? ' Y ' + unidades[u] : '');
+          }
+        }
+        return txt;
+      }
+
+      const millones = Math.floor(num / 1000000);
+      const miles = Math.floor((num % 1000000) / 1000);
+      const resto = num % 1000;
+      let partes = [];
+
+      if (millones === 1) partes.push('UN MILLON');
+      else if (millones > 1) partes.push(menorMil(millones) + ' MILLONES');
+
+      if (miles === 1) partes.push('MIL');
+      else if (miles > 1) partes.push(menorMil(miles) + ' MIL');
+
+      if (resto > 0) {
+        let rTxt = menorMil(resto);
+        if (rTxt.endsWith('UN')) rTxt = rTxt.slice(0, -2) + 'UNO';
+        partes.push(rTxt);
+      }
+
+      const finalTxt = partes.join(' ').trim();
+      return (millones > 0 && miles === 0 && resto === 0) ? `${finalTxt} DE PESOS` : `${finalTxt} PESOS`;
+    }
+
+    window.actualizarPreviaSumaLetras = function() {
+      const val = limpiarNumero(document.getElementById('pysValor').value);
+      document.getElementById('pysSumaLetras').value = val > 0 ? numeroALetras(val) : '';
+    };
+
+    function formatearPesosCol(n) {
+      const r = Math.round((Number(n) || 0) * 100) / 100;
+      return '$ ' + r.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function calcularLinea(cant, vUnit, ivaPct) {
+      const base = Math.round(cant * vUnit * 100) / 100;
+      const valIva = ivaPct > 0 ? Math.round(base * (ivaPct / 100) * 100) / 100 : 0;
+      const total = Math.round((base + valIva) * 100) / 100;
+      return { base, valIva, total };
+    }
+
+    function calcularTotalItems(items) {
+      let sum = 0;
+      for (const it of items) {
+        if (!it.activo) continue;
+        sum += calcularLinea(it.cantidad, it.valorUnitario, it.ivaPct).total;
+      }
+      return Math.round(sum * 100) / 100;
+    }
+
+    function construirFacturaProporcional(nit, valRaw, contrato) {
+      const totalBase = PLANTILLA_39_BASE.reduce((acc, it) => acc + calcularLinea(it.cantBase, it.valorUnitario, it.ivaPct).total, 0);
+      const factor = valRaw / totalBase;
+
+      const items = PLANTILLA_39_BASE.map(it => ({
+        activo: true,
+        prefijo: it.prefijo,
+        descripcion: it.descripcion,
+        unidad: it.unidad,
+        cantidad: Math.max(1, Math.round(it.cantBase * factor)),
+        valorUnitario: it.valorUnitario,
+        ivaPct: it.ivaPct
+      }));
+
+      const idxAjuste = [12, 24, 37, 0, 11, 1, 4, 6, 7, 2, 5];
+      for (let iter = 0; iter < 400; iter++) {
+        const actual = calcularTotalItems(items);
+        const diff = valRaw - actual;
+        if (Math.abs(diff) < 195) break;
+        let mejorIdx = -1, mejorPaso = 0, menorError = Math.abs(diff);
+        for (const idx of idxAjuste) {
+          const precio = items[idx].valorUnitario;
+          const paso = diff > 0 ? 1 : -1;
+          if (items[idx].cantidad + paso < 1) continue;
+          const nuevoErr = Math.abs(diff - paso * precio);
+          if (nuevoErr < menorError) { menorError = nuevoErr; mejorIdx = idx; mejorPaso = paso; }
+        }
+        if (mejorIdx !== -1) items[mejorIdx].cantidad += mejorPaso;
+        else break;
+      }
+
+      const actualPre = calcularTotalItems(items);
+      const rem = valRaw - actualPre;
+      if (Math.abs(rem) >= 1 && Math.abs(rem) <= 15000) {
+        let bestDelta = null, bestErr = Math.abs(rem);
+        for (let dSal = -4; dSal <= 4; dSal++) {
+          if (items[37].cantidad + dSal < 1) continue;
+          for (let dGal = -5; dGal <= 5; dGal++) {
+            if (items[0].cantidad + dGal < 1) continue;
+            for (let dHue = -5; dHue <= 5; dHue++) {
+              if (items[11].cantidad + dHue < 1) continue;
+              for (let dMan = -5; dMan <= 5; dMan++) {
+                if (items[1].cantidad + dMan < 1) continue;
+                const subDelta = dSal * 1528 + dGal * 870 + dHue * 750 + dMan * 650;
+                const falta = rem - subDelta;
+                const dPan = Math.round(falta / 390);
+                if (Math.abs(dPan) <= 12 && items[4].cantidad + dPan >= 1) {
+                  const err = Math.abs(rem - (subDelta + dPan * 390));
+                  if (err < bestErr) { bestErr = err; bestDelta = { dSal, dGal, dHue, dMan, dPan }; }
+                }
+              }
+            }
+          }
+        }
+        if (bestDelta) {
+          items[37].cantidad += bestDelta.dSal;
+          items[0].cantidad  += bestDelta.dGal;
+          items[11].cantidad += bestDelta.dHue;
+          items[1].cantidad  += bestDelta.dMan;
+          items[4].cantidad  += bestDelta.dPan;
+        }
+      }
+
+      const nombreEmpresa = DIRECTORIO_EMPRESAS[nit] || document.getElementById('propClienteInput').value.trim() || `CLIENTE NIT ${nit}`;
+      return {
+        id: Date.now() + Math.random(),
+        fechaCreacion: new Date().toISOString().slice(0, 10),
+        origen: 'Proporcional 39 Ítems',
+        cliente: nombreEmpresa,
+        nit: nit,
+        contrato: contrato || `PROPORCIONAL $${valRaw.toLocaleString('es-CO')}`,
+        granTotalExcel: valRaw,
+        items: items
+      };
+    }
+
+    window.agregarFacturaProporcional = function() {
+      const nit = document.getElementById('propNit').value.trim().replace(/[^0-9]/g, '');
+      const valRaw = limpiarNumero(document.getElementById('propValor').value);
+      const contrato = document.getElementById('propContrato').value.trim();
+      if (!nit) { alert('Ingresa el NIT del cliente.'); return; }
+      if (!valRaw || valRaw <= 0) { alert('Ingresa un Valor Total mayor a 0.'); return; }
+
+      const fac = construirFacturaProporcional(nit, valRaw, contrato);
+      todasLasFacturas.push(fac);
+      guardarFacturaEnHistorial(fac);
+      document.getElementById('propValor').value = '';
+      renderFacturas();
+    };
+
+    function guardarFacturaEnHistorial(fac) {
+      const tot = calcularTotalItems(fac.items);
+      const registro = {
+        id: fac.id || (Date.now() + Math.random()),
+        tipo: 'FACTURA',
+        fecha: new Date().toISOString().slice(0, 10),
+        nit: fac.nit,
+        cliente: DIRECTORIO_EMPRESAS[fac.nit] || fac.cliente || `NIT ${fac.nit}`,
+        contrato: fac.contrato || '',
+        total: tot,
+        itemsCount: fac.items.filter(x => x.activo).length,
+        facturaData: JSON.parse(JSON.stringify(fac))
+      };
+      historialGuardado.unshift(registro);
+      if (historialGuardado.length > 300) historialGuardado.pop();
+      localStorage.setItem('lgc_historial_v1', JSON.stringify(historialGuardado));
+      actualizarBadgeHistorial();
+    }
+
+    function actualizarBadgeHistorial() {
+      document.getElementById('badgeCount').textContent = historialGuardado.length;
+    }
+
+    // --- LECTOR NATIVO .XLSX Y TEXTO PEGADO ---
+    async function leerZipEntries(arrayBuffer) {
+      const view = new DataView(arrayBuffer);
+      const uint8 = new Uint8Array(arrayBuffer);
+      let eocdOffset = -1;
+      for (let i = uint8.length - 22; i >= Math.max(0, uint8.length - 65557); i--) {
+        if (view.getUint32(i, true) === 0x06054b50) { eocdOffset = i; break; }
+      }
+      if (eocdOffset === -1) throw new Error('El archivo no es un .xlsx válido.');
+      const cdCount = view.getUint16(eocdOffset + 10, true);
+      const cdOffset = view.getUint32(eocdOffset + 16, true);
+      let pos = cdOffset;
+      const entries = {};
+      const decoder = new TextDecoder('utf-8');
+      for (let i = 0; i < cdCount; i++) {
+        if (view.getUint32(pos, true) !== 0x02014b50) break;
+        const method = view.getUint16(pos + 10, true);
+        const compSize = view.getUint32(pos + 20, true);
+        const nameLen = view.getUint16(pos + 28, true);
+        const extraLen = view.getUint16(pos + 30, true);
+        const commentLen = view.getUint16(pos + 32, true);
+        const localHeaderOffset = view.getUint32(pos + 42, true);
+        const name = decoder.decode(uint8.subarray(pos + 46, pos + 46 + nameLen));
+        const localNameLen = view.getUint16(localHeaderOffset + 26, true);
+        const localExtraLen = view.getUint16(localHeaderOffset + 28, true);
+        const dataStart = localHeaderOffset + 30 + localNameLen + localExtraLen;
+        const compData = uint8.subarray(dataStart, dataStart + compSize);
+        if (method === 0) entries[name] = decoder.decode(compData);
+        else if (method === 8) {
+          const ds = new DecompressionStream('deflate-raw');
+          const writer = ds.writable.getWriter();
+          writer.write(compData); writer.close();
+          const buf = await new Response(ds.readable).arrayBuffer();
+          entries[name] = decoder.decode(new Uint8Array(buf));
+        }
+        pos += 46 + nameLen + extraLen + commentLen;
+      }
+      return entries;
+    }
+
+    function colRefToIndex(ref) {
+      const m = String(ref).match(/^[A-Z]+/);
+      if (!m) return 0;
+      let col = 0;
+      for (let i = 0; i < m[0].length; i++) col = col * 26 + (m[0].charCodeAt(i) - 64);
+      return col - 1;
+    }
+
+    async function leerXlsxNativo(arrayBuffer) {
+      const entries = await leerZipEntries(arrayBuffer);
+      const parser = new DOMParser();
+      const sharedStrings = [];
+      if (entries['xl/sharedStrings.xml']) {
+        const xmlDoc = parser.parseFromString(entries['xl/sharedStrings.xml'], 'application/xml');
+        const siNodes = xmlDoc.getElementsByTagName('si');
+        for (let i = 0; i < siNodes.length; i++) {
+          const tNodes = siNodes[i].getElementsByTagName('t');
+          let txt = '';
+          for (let j = 0; j < tNodes.length; j++) txt += tNodes[j].textContent;
+          sharedStrings.push(txt);
+        }
+      }
+      const hojasRows = [];
+      const sheetKeys = Object.keys(entries).filter(k => /^xl\/worksheets\/sheet\d+\.xml$/i.test(k)).sort();
+      for (const key of sheetKeys) {
+        const xmlDoc = parser.parseFromString(entries[key], 'application/xml');
+        const rowNodes = xmlDoc.getElementsByTagName('row');
+        const rows = [];
+        for (let i = 0; i < rowNodes.length; i++) {
+          const cNodes = rowNodes[i].getElementsByTagName('c');
+          const rowArr = [];
+          for (let j = 0; j < cNodes.length; j++) {
+            const c = cNodes[j];
+            const colIdx = colRefToIndex(c.getAttribute('r') || '');
+            const t = c.getAttribute('t');
+            const vNode = c.getElementsByTagName('v')[0];
+            const isNode = c.getElementsByTagName('is')[0];
+            let val = null;
+            if (t === 's' && vNode) val = sharedStrings[parseInt(vNode.textContent, 10)] ?? '';
+            else if (t === 'inlineStr' && isNode) val = isNode.textContent;
+            else if (vNode) {
+              const raw = vNode.textContent;
+              const num = Number(raw);
+              val = (!isNaN(num) && t !== 'str') ? num : raw;
+            }
+            rowArr[colIdx] = val;
+          }
+          rows.push(rowArr);
+        }
+        hojasRows.push(rows);
+      }
+      return hojasRows;
+    }
+
+    function parsearTexto(texto) {
+      return texto.split(/\r?\n/).map(linea => {
+        if (linea.includes('\t')) return linea.split('\t');
+        const res = [];
+        let cur = '', enComillas = false;
+        for (let i = 0; i < linea.length; i++) {
+          const ch = linea[i];
+          if (ch === '"') enComillas = !enComillas;
+          else if (ch === ',' && !enComillas) { res.push(cur); cur = ''; }
+          else cur += ch;
+        }
+        res.push(cur);
+        return res;
+      });
+    }
+
+    function limpiarNumero(val) {
+      if (val === null || val === undefined || val === '') return 0;
+      if (typeof val === 'number') return val;
+      let s = String(val).trim().replace(/[$\s%]/g, '');
+      if (s.includes('.') && s.includes(',')) {
+        if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+        else s = s.replace(/,/g, '');
+      } else if (s.includes(',')) {
+        if (/^\d{1,3}(,\d{3})+$/.test(s)) s = s.replace(/,/g, '');
+        else s = s.replace(',', '.');
+      } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+        s = s.replace(/\./g, '');
+      }
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
+    }
+
+    function formatearNum(n) {
+      const r = Math.round(n * 100) / 100;
+      return Number.isInteger(r) ? String(r) : String(r);
+    }
+
+    function limpiarDesc(desc) {
+      return String(desc || '').trim().toUpperCase().replace(/[,;"]/g, ' ').replace(/\s+/g, ' ');
+    }
+
+    function obtenerPrefijo(desc) {
+      const letras = desc.replace(/[^A-ZÁÉÍÓÚÑ]/g, '');
+      return (letras.slice(0, 3) || 'PRD').padEnd(3, 'X');
+    }
+
+    function detectarUnidad(desc) {
+      const d = ` ${desc} `;
+      if ([' KILOS', ' KILO ', ' KGM', ' KG '].some(k => d.includes(k))) return 'KGM';
+      if (d.includes('UNIDAD') || d.includes(' UND') || d.includes('CUBETA')) return '94';
+      if ([' 1000 CC', ' 500 CC', ' LITRO', ' LTR', ' BOLSA X 1000'].some(k => d.includes(k))) return 'LTR';
+      if ([' 500 GR', ' LIBRA', ' LIBRAS', ' LBR'].some(k => d.includes(k))) return 'LBR';
+      if ([' PAQ ', ' PAQUETE'].some(k => d.includes(k))) return 'PA';
+      return '94';
+    }
+
+    function extraerFacturas(rows, origen) {
+      const facturas = [];
+      let nitActual = null, clienteActual = '', contratoActual = '';
+      let enItems = false, colAlimento = 3, itemsActuales = [], granTotalExcel = null;
+
+      const guardarSiHay = () => {
+        if (nitActual && itemsActuales.length > 0) {
+          const fac = {
+            id: Date.now() + Math.random(),
+            origen,
+            cliente: DIRECTORIO_EMPRESAS[nitActual] || clienteActual || `NIT ${nitActual}`,
+            nit: nitActual,
+            contrato: contratoActual,
+            granTotalExcel,
+            items: itemsActuales
+          };
+          facturas.push(fac);
+          guardarFacturaEnHistorial(fac);
+        }
+        itemsActuales = [];
+        granTotalExcel = null;
+      };
+
+      for (const row of rows) {
+        if (!row || !row.length) continue;
+        const vals = row.slice(0, 12);
+        const textoFila = vals.filter(x => x !== null && x !== undefined).join(' ').trim();
+        if (!textoFila) continue;
+
+        const idxCliente = vals.findIndex(x => x !== null && x !== undefined && String(x).toUpperCase().includes('CLIENTE'));
+        if (idxCliente !== -1 && idxCliente <= 4) {
+          guardarSiHay();
+          enItems = false;
+          const resto = vals.slice(idxCliente + 1).filter(x => x !== null && x !== undefined && String(x).trim() !== '');
+          clienteActual = resto[0] ? String(resto[0]).trim() : '';
+          continue;
+        }
+
+        const mNit = textoFila.match(/NIT\s*[:.]?\s*(\d+)/i);
+        if (mNit) { guardarSiHay(); nitActual = mNit[1]; enItems = false; continue; }
+
+        const celdaContrato = vals.find(x => x && String(x).trim().toUpperCase().startsWith('CONTRATO'));
+        if (celdaContrato) { contratoActual = String(celdaContrato).trim(); continue; }
+
+        const idxAlim = vals.findIndex(x => x && String(x).trim().toUpperCase() === 'ALIMENTO');
+        if (idxAlim !== -1) { colAlimento = idxAlim; enItems = true; continue; }
+
+        const idxGranTotal = vals.findIndex(x => x && String(x).toUpperCase().includes('GRAN TOTAL'));
+        if (idxGranTotal !== -1) {
+          const numsDespues = vals.slice(idxGranTotal + 1).map(limpiarNumero).filter(n => n > 0);
+          granTotalExcel = numsDespues.length ? numsDespues[numsDespues.length - 1] : 0;
+          guardarSiHay(); enItems = false; continue;
+        }
+
+        if (enItems) {
+          const nombreProd = String(vals[colAlimento] || '').trim();
+          if (!nombreProd) continue;
+          const cant = limpiarNumero(vals[colAlimento + 1]);
+          const vUnit = limpiarNumero(vals[colAlimento + 2]);
+          const ivaRaw = limpiarNumero(vals[colAlimento + 3]);
+          if (cant > 0 && vUnit > 0) {
+            const ivaPct = (ivaRaw > 0 && ivaRaw < 1) ? Math.round(ivaRaw * 100) : Math.round(ivaRaw);
+            const descLimpia = limpiarDesc(nombreProd);
+            itemsActuales.push({
+              activo: true,
+              prefijo: obtenerPrefijo(descLimpia),
+              descripcion: descLimpia,
+              unidad: detectarUnidad(descLimpia),
+              cantidad: cant,
+              valorUnitario: Math.round(vUnit * 100) / 100,
+              ivaPct: ivaPct
+            });
+          }
+        }
+      }
+      guardarSiHay();
+      return facturas;
+    }
+
+    function generarCSVFacturatech(facturas, fechaVenc) {
+      const lineas = [];
+      for (const fac of facturas) {
+        const itemsActivos = fac.items.filter(it => it.activo);
+        itemsActivos.forEach((it, idx) => {
+          const row = new Array(73).fill('');
+          if (idx === 0) {
+            row[0] = String(fac.nit);
+            row[2] = '10';
+            row[3] = 'INVOIC';
+            row[4] = '01';
+            row[7] = fechaVenc;
+            row[9] = 'credito';
+            row[10] = '30';
+            row[11] = fechaVenc;
+          }
+          row[12] = formatearNum(it.cantidad);
+          row[13] = it.prefijo || obtenerPrefijo(it.descripcion);
+          row[14] = it.descripcion;
+          row[15] = it.unidad || detectarUnidad(it.descripcion);
+          row[17] = formatearNum(it.valorUnitario);
+          row[18] = '999';
+          row[19] = '10101706';
+
+          if (it.ivaPct > 0) {
+            const { base, valIva } = calcularLinea(it.cantidad, it.valorUnitario, it.ivaPct);
+            row[26] = '01';
+            row[27] = formatearNum(base);
+            row[28] = String(it.ivaPct);
+            row[31] = formatearNum(valIva);
+          }
+          lineas.push(row.join(','));
+        });
+      }
+      return lineas.join('\r\n');
+    }
+
+    function descargarArchivoTexto(contenido, nombre) {
+      const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = nombre; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    window.descargarGuardarTodoCSV = function() {
+      if (!todasLasFacturas.length) return;
+      const fecha = document.getElementById('fechaVenc').value;
+      const csv = generarCSVFacturatech(todasLasFacturas, fecha);
+      descargarArchivoTexto(csv, `Facturas_FacturaTech_${fecha}.csv`);
+    };
+
+    window.descargarUnaFactura = function(fIdx) {
+      const f = todasLasFacturas[fIdx];
+      const fecha = document.getElementById('fechaVenc').value;
+      const nombre = (f.contrato || f.nit).replace(/[^a-zA-Z0-9_-]/g, '_');
+      descargarArchivoTexto(generarCSVFacturatech([f], fecha), `Factura_${nombre}_facturatech.csv`);
+    };
+
+    window.limpiarMesaFacturas = function() {
+      todasLasFacturas = [];
+      renderFacturas();
+    };
+
+    window.toggleItem = function(fIdx, iIdx, checked) {
+      todasLasFacturas[fIdx].items[iIdx].activo = checked;
+      renderFacturas();
+    };
+
+    window.cambiarCantidad = function(fIdx, iIdx, val) {
+      todasLasFacturas[fIdx].items[iIdx].cantidad = Math.max(1, Math.round(Number(val) || 1));
+      renderFacturas();
+    };
+
+    function renderFacturas() {
+      const cont = document.getElementById('contenedorFacturas');
+      const barra = document.getElementById('barraAccionesFacturas');
+      barra.style.display = todasLasFacturas.length ? 'block' : 'none';
+      if (!todasLasFacturas.length) { cont.innerHTML = ''; return; }
+
+      let sumaGlobal = 0;
+      let html = '';
+      todasLasFacturas.forEach((f, fIdx) => {
+        let sub = 0, iva = 0;
+        f.items.forEach(it => {
+          if (!it.activo) return;
+          const lin = calcularLinea(it.cantidad, it.valorUnitario, it.ivaPct);
+          sub += lin.base; iva += lin.valIva;
+        });
+        const tot = Math.round((sub + iva) * 100) / 100;
+        sumaGlobal += tot;
+        const dif = (f.granTotalExcel !== null && f.granTotalExcel > 0) ? Math.round((tot - f.granTotalExcel) * 100) / 100 : 0;
+
+        html += `<div class="card">
+          <div class="card-title" style="border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+            <div>
+              <span class="badge">NIT ${f.nit}</span>
+              <strong style="margin-left:8px;">Factura #${fIdx + 1}: ${f.contrato || f.cliente}</strong>
+              <span style="font-size:12px; color:var(--muted); margin-left:6px;">(${DIRECTORIO_EMPRESAS[f.nit] || f.cliente})</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              ${f.granTotalExcel ? `<span class="badge ${Math.abs(dif) <= 500 ? 'badge-ok' : 'badge-warn'}">Objetivo: $${f.granTotalExcel.toLocaleString('es-CO')} (Dif: $${dif.toLocaleString('es-CO')})</span>` : ''}
+              <strong style="font-size:15px;">Total: $${tot.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+              <button type="button" class="btn-sec" onclick="descargarUnaFactura(${fIdx})">⬇ CSV Individual</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:36px;">Inc.</th>
+                <th>Cód</th>
+                <th>Descripción Producto</th>
+                <th>Und</th>
+                <th class="num">Cantidad</th>
+                <th class="num">V. Unitario</th>
+                <th class="num">IVA %</th>
+                <th class="num">Subtotal</th>
+                <th class="num">Total Línea</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+        f.items.forEach((it, iIdx) => {
+          const lin = calcularLinea(it.cantidad, it.valorUnitario, it.ivaPct);
+          html += `<tr style="${it.activo ? '' : 'opacity:0.4; text-decoration:line-through;'}">
+            <td><input type="checkbox" ${it.activo ? 'checked' : ''} onchange="toggleItem(${fIdx}, ${iIdx}, this.checked)" /></td>
+            <td>${it.prefijo}</td>
+            <td>${it.descripcion}</td>
+            <td>${it.unidad}</td>
+            <td class="num"><input type="number" step="1" min="1" class="qty-input" value="${it.cantidad}" onchange="cambiarCantidad(${fIdx}, ${iIdx}, this.value)" /></td>
+            <td class="num">$${it.valorUnitario.toLocaleString('es-CO', { maximumFractionDigits: 2 })}</td>
+            <td class="num">${it.ivaPct}%</td>
+            <td class="num">$${lin.base.toLocaleString('es-CO', { maximumFractionDigits: 2 })}</td>
+            <td class="num"><strong>$${lin.total.toLocaleString('es-CO', { maximumFractionDigits: 2 })}</strong></td>
+          </tr>`;
+        });
+        html += `</tbody></table></div>`;
+      });
+
+      document.getElementById('resumenLoteActual').textContent = `${todasLasFacturas.length} Factura(s) lista(s) — Gran Total: $${sumaGlobal.toLocaleString('es-CO', { maximumFractionDigits: 2 })}`;
+      cont.innerHTML = html;
+    }
+
+    // --- ENVIAR FACTURAS A PAZ Y SALVO EN 1 CLIC ---
+    window.enviarLoteAPazYSalvo = function() {
+      if (!todasLasFacturas.length) return;
+      const consecInicial = prompt('¿Desde qué número de factura (consecutivo LC) quieres numerar los Paz y Salvos? (Ej: 871)', '871');
+      let num = parseInt((consecInicial || '871').replace(/[^0-9]/g, ''), 10) || 871;
+      const fechaCert = document.getElementById('pysFechaCert').value;
+      const mes = document.getElementById('pysMes').value;
+
+      listaPazYSalvos = todasLasFacturas.map((f, idx) => {
+        const tot = Math.round(calcularTotalItems(f.items));
+        const emp = DIRECTORIO_EMPRESAS[f.nit] || f.cliente || `ASOCIACION NIT ${f.nit}`;
+        return {
+          fechaEmision: fechaCert,
+          nombreEmpresa: emp,
+          nit: f.nit,
+          mes: mes,
+          sumaLetras: numeroALetras(tot),
+          facturaId: `LC${num + idx}`,
+          cantidad: '1',
+          valorNumerico: tot,
+          valorFormatted: formatearPesosCol(tot)
+        };
+      });
+
+      renderPazYSalvos();
+      mostrarVista('pazysalvo');
+    };
+
+    window.agregarPazYSalvoManual = function() {
+      const nit = document.getElementById('pysNit').value.trim() || '800141359';
+      const emp = document.getElementById('pysEmpresa').value.trim().toUpperCase() || DIRECTORIO_EMPRESAS[nit] || 'ASOCIACION DE PADRES USUARIOS DE HOGARES DE BIENESTAR';
+      const facId = document.getElementById('pysFacturaId').value.trim().toUpperCase() || 'LC871';
+      const mes = document.getElementById('pysMes').value;
+      const fecha = document.getElementById('pysFechaCert').value.trim();
+      const val = Math.round(limpiarNumero(document.getElementById('pysValor').value));
+      if (!val || val <= 0) { alert('Ingresa un valor válido para el Paz y Salvo.'); return; }
+      const letras = document.getElementById('pysSumaLetras').value.trim().toUpperCase() || numeroALetras(val);
+
+      const nuevo = {
+        fechaEmision: fecha,
+        nombreEmpresa: emp,
+        nit: nit,
+        mes: mes,
+        sumaLetras: letras,
+        facturaId: facId,
+        cantidad: '1',
+        valorNumerico: val,
+        valorFormatted: formatearPesosCol(val)
+      };
+      listaPazYSalvos.unshift(nuevo);
+
+      historialGuardado.unshift({
+        id: Date.now() + Math.random(),
+        tipo: 'PAZ Y SALVO',
+        fecha: new Date().toISOString().slice(0, 10),
+        nit: nit,
+        cliente: emp,
+        contrato: `Factura ${facId} (${mes})`,
+        total: val,
+        itemsCount: 1,
+        pysData: nuevo
+      });
+      localStorage.setItem('lgc_historial_v1', JSON.stringify(historialGuardado));
+      actualizarBadgeHistorial();
+      renderPazYSalvos();
+    };
+
+    function renderPazYSalvos() {
+      const area = document.getElementById('printArea');
+      const card = document.getElementById('listaPysCard');
+      card.style.display = listaPazYSalvos.length ? 'block' : 'none';
+      document.getElementById('countPysListos').textContent = listaPazYSalvos.length;
+
+      let htmlHojas = '';
+      listaPazYSalvos.forEach((d) => {
+        htmlHojas += `<div class="pys-sheet" style="margin-bottom:24px;">
+          <div class="pys-top">
+            <div class="pys-date">BOGOTA<br>${d.fechaEmision}</div>
+            <img src="${LOGO_BASE64}" class="pys-logo" alt="Logo" />
+          </div>
+          <div class="pys-title">PAZ Y SALVO</div>
+          <div class="pys-emp">${d.nombreEmpresa}<br>${d.nit}</div>
+          <div class="pys-stmt">
+            <span>Se encuentra a paz y salvo por todo concepto del mes</span>
+            <strong>${d.mes}</strong>
+          </div>
+          <div class="pys-sum-row">
+            <span>La suma de:</span>
+            <strong>${d.sumaLetras}</strong>
+          </div>
+          <div class="pys-mte-row">Pesos M/TE: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${d.valorFormatted}</div>
+          <table class="pys-table">
+            <thead>
+              <tr><th>FACTURA</th><th style="text-align:center;">CANT</th><th style="text-align:right;">VALOR</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>${d.facturaId}</td><td style="text-align:center;">${d.cantidad}</td><td style="text-align:right;">${d.valorFormatted}</td></tr>
+              <tr><td>AJUSTE FACTURA</td><td></td><td style="text-align:right;">-</td></tr>
+              <tr><td style="height:18px;"></td><td></td><td></td></tr>
+              <tr><td style="height:18px;"></td><td></td><td></td></tr>
+              <tr>
+                <td colspan="2" style="text-align:right; font-weight:bold;">TOTAL</td>
+                <td class="pys-yellow">${d.valorFormatted}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-size:12px; margin: 28px 0 34px;">Suministro alimentario programa Bienestar Familiar.</div>
+          <div class="pys-sign">
+            <div>Cordialmente,</div>
+            <img src="${FIRMA_BASE64}" alt="Firma" />
+            <div style="font-weight:bold; margin-top:4px;">JOHN ALEXANDER BALAGUERA</div>
+            <div>CC 79,989,038</div>
+            <div>Representante Legal</div>
+            <div style="color:#1d4ed8; text-decoration:underline;">elsurtidor_h.b@hotmail.com</div>
+            <div>calle 57sur # 18b 09</div>
+            <div>cel 320-3933494</div>
+          </div>
+        </div>`;
+      });
+      area.innerHTML = htmlHojas;
+    }
+
+    window.imprimirPazYSalvos = function() {
+      window.print();
+    };
+
+    window.descargarCsvPazYSalvo = function() {
+      if (!listaPazYSalvos.length) return;
+      const header = 'PAZ Y SALVO;FECHA;NOMBRE ARCHIVO;NOMBRE EMPRESA;NIT;MES ESCRITO;SUMA EN LETRAS;PESOS M/TE;FACTURA;CANT;VALOR;TOTAL FACTURA';
+      const rows = listaPazYSalvos.map(d => [
+        'LGC', d.fechaEmision, `${d.facturaId} ${d.nit}`, d.nombreEmpresa, d.nit,
+        d.mes, d.sumaLetras, d.valorFormatted, d.facturaId, d.cantidad, d.valorFormatted, d.valorFormatted
+      ].join(';'));
+      descargarArchivoTexto([header, ...rows].join('\r\n'), 'Plantilla_PazYSalvo_Lote.csv');
+    };
+
+    // --- HISTORIAL ---
+    window.renderHistorial = function() {
+      const q = (document.getElementById('buscarHistorial').value || '').toLowerCase();
+      const cont = document.getElementById('contenedorHistorial');
+      const filtrados = historialGuardado.filter(h =>
+        !q || h.nit.toLowerCase().includes(q) || h.cliente.toLowerCase().includes(q) || (h.contrato || '').toLowerCase().includes(q) || h.fecha.includes(q)
+      );
+
+      if (!filtrados.length) {
+        cont.innerHTML = '<p style="color:var(--muted);">No hay registros en el historial todavía.</p>';
+        return;
+      }
+
+      let html = `<table>
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Tipo</th><th>NIT</th><th>Asociación / Cliente</th><th>Contrato / Ref</th><th class="num">Total</th><th>Acciones</th>
+          </tr>
+        </thead><tbody>`;
+
+      filtrados.forEach((h) => {
+        html += `<tr>
+          <td>${h.fecha}</td>
+          <td><span class="badge ${h.tipo === 'FACTURA' ? '' : 'badge-ok'}">${h.tipo}</span></td>
+          <td><strong>${h.nit}</strong></td>
+          <td>${h.cliente}</td>
+          <td>${h.contrato}</td>
+          <td class="num"><strong>$${Number(h.total).toLocaleString('es-CO', { maximumFractionDigits: 2 })}</strong></td>
+          <td>
+            ${h.facturaData ? `<button type="button" class="btn-sec" onclick="reabrirFacturaHistorial('${h.id}')">Reabrir / CSV</button>` : ''}
+            <button type="button" class="btn-ok" onclick="crearPysDesdeHistorial('${h.id}')">Paz y Salvo</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      cont.innerHTML = html;
+    };
+
+    window.reabrirFacturaHistorial = function(id) {
+      const reg = historialGuardado.find(x => String(x.id) === String(id));
+      if (!reg || !reg.facturaData) return;
+      todasLasFacturas = [JSON.parse(JSON.stringify(reg.facturaData))];
+      renderFacturas();
+      mostrarVista('facturas');
+    };
+
+    window.crearPysDesdeHistorial = function(id) {
+      const reg = historialGuardado.find(x => String(x.id) === String(id));
+      if (!reg) return;
+      const tot = Math.round(Number(reg.total) || 0);
+      const facId = prompt('Número de Factura para el Paz y Salvo (ej: LC875):', 'LC875') || 'LC875';
+      listaPazYSalvos = [{
+        fechaEmision: document.getElementById('pysFechaCert').value,
+        nombreEmpresa: DIRECTORIO_EMPRESAS[reg.nit] || reg.cliente,
+        nit: reg.nit,
+        mes: document.getElementById('pysMes').value,
+        sumaLetras: numeroALetras(tot),
+        facturaId: facId.toUpperCase(),
+        cantidad: '1',
+        valorNumerico: tot,
+        valorFormatted: formatearPesosCol(tot)
+      }];
+      renderPazYSalvos();
+      mostrarVista('pazysalvo');
+    };
+
+    window.exportarRespaldoJSON = function() {
+      const blob = new Blob([JSON.stringify(historialGuardado, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `Respaldo_Historial_LGC_${new Date().toISOString().slice(0,10)}.json`; a.click();
+    };
+
+    window.importarRespaldoJSON = async function(e) {
+      const f = e.target.files[0];
+      if (!f) return;
+      const txt = await f.text();
+      const data = JSON.parse(txt);
+      if (Array.isArray(data)) {
+        historialGuardado = data;
+        localStorage.setItem('lgc_historial_v1', JSON.stringify(historialGuardado));
+        actualizarBadgeHistorial();
+        renderHistorial();
+        alert(`Se restauraron ${data.length} registros en el historial.`);
+      }
+    };
+
+    // --- EVENTOS ARCHIVOS EXCEL / PEGAR ---
+    async function procesarArchivos(files) {
+      const status = document.getElementById('statusArchivo');
+      try {
+        for (const file of files) {
+          if (file.name.toLowerCase().endsWith('.xlsx')) {
+            const buf = await file.arrayBuffer();
+            const hojas = await leerXlsxNativo(buf);
+            hojas.forEach(rows => todasLasFacturas.push(...extraerFacturas(rows, file.name)));
+          } else {
+            const txt = await file.text();
+            todasLasFacturas.push(...extraerFacturas(parsearTexto(txt), file.name));
+          }
+        }
+        status.textContent = `Cargadas ${todasLasFacturas.length} factura(s) en la mesa de trabajo.`;
+        renderFacturas();
+      } catch (err) {
+        status.style.color = '#dc2626';
+        status.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    const dz = document.getElementById('dropzone');
+    const fi = document.getElementById('fileInput');
+    dz.addEventListener('click', () => fi.click());
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault(); dz.classList.remove('dragover');
+      if (e.dataTransfer.files.length) procesarArchivos(e.dataTransfer.files);
+    });
+    fi.addEventListener('change', e => { if (e.target.files.length) procesarArchivos(e.target.files); });
+
+    window.procesarTextoPegado = function() {
+      const txt = document.getElementById('txtPaste').value;
+      if (!txt.trim()) return;
+      todasLasFacturas.push(...extraerFacturas(parsearTexto(txt), 'Pegado manual'));
+      renderFacturas();
+    };
+
+    // --- COPILOTO IA CON GEMINI 2.5 FLASH ---
+    window.guardarApiKey = function() {
+      localStorage.setItem('lgc_gemini_key', document.getElementById('geminiApiKey').value.trim());
+    };
+
+    function agregarMensajeChat(texto, rol) {
+      const box = document.getElementById('chatBox');
+      const div = document.createElement('div');
+      div.className = 'msg ' + rol;
+      div.innerHTML = texto;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    window.enviarMensajeIA = async function() {
+      const input = document.getElementById('chatInput');
+      const promptUsuario = input.value.trim();
+      const apiKey = document.getElementById('geminiApiKey').value.trim();
+      if (!promptUsuario) return;
+      if (!apiKey) { alert('Configura tu API Key de Gemini arriba.'); return; }
+
+      input.value = '';
+      agregarMensajeChat(promptUsuario, 'user');
+      const btn = document.getElementById('btnEnviarIA');
+      btn.disabled = true; btn.textContent = 'Pensando...';
+
+      const sistema = `Eres el asistente contable de LGC (John Alexander Balaguera).
+Directorio de asociaciones conocido (NIT -> Nombre): ${JSON.stringify(DIRECTORIO_EMPRESAS)}.
+Responde SIEMPRE en JSON válido con esta estructura exacta:
+{
+  "respuesta": "mensaje amable en español explicando lo que hiciste",
+  "facturasProporcionales": [
+    { "nit": "900244596", "valorTotal": 25000000, "contrato": "CONTRATO..." }
+  ],
+  "pazYSalvos": [
+    { "nit": "900244596", "nombreEmpresa": "...", "facturaId": "LC880", "mes": "OCTUBRE", "valor": 25000000 }
+  ]
+}`;
+
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: sistema + "\n\nSolicitud del usuario:\n" + promptUsuario }] }],
+            generationConfig: { responseMimeType: 'application/json' }
+          })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+
+        const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+        const parsed = JSON.parse(rawJson);
+
+        let accionesHtml = '';
+        if (Array.isArray(parsed.facturasProporcionales) && parsed.facturasProporcionales.length > 0) {
+          parsed.facturasProporcionales.forEach(fp => {
+            const fac = construirFacturaProporcional(String(fp.nit), Number(fp.valorTotal), fp.contrato || '');
+            todasLasFacturas.push(fac);
+            guardarFacturaEnHistorial(fac);
+          });
+          renderFacturas();
+          accionesHtml += `<br><br><button type="button" class="btn" onclick="mostrarVista('facturas')">Ver ${parsed.facturasProporcionales.length} Factura(s) Creada(s)</button>`;
+        }
+
+        if (Array.isArray(parsed.pazYSalvos) && parsed.pazYSalvos.length > 0) {
+          listaPazYSalvos = parsed.pazYSalvos.map(p => {
+            const v = Math.round(Number(p.valor) || 0);
+            return {
+              fechaEmision: document.getElementById('pysFechaCert').value,
+              nombreEmpresa: p.nombreEmpresa || DIRECTORIO_EMPRESAS[p.nit] || `NIT ${p.nit}`,
+              nit: String(p.nit),
+              mes: (p.mes || 'OCTUBRE').toUpperCase(),
+              sumaLetras: numeroALetras(v),
+              facturaId: (p.facturaId || 'LC871').toUpperCase(),
+              cantidad: '1',
+              valorNumerico: v,
+              valorFormatted: formatearPesosCol(v)
+            };
+          });
+          renderPazYSalvos();
+          accionesHtml += ` <button type="button" class="btn-ok" onclick="mostrarVista('pazysalvo')">Ver / Imprimir Paz y Salvo(s)</button>`;
+        }
+
+        agregarMensajeChat((parsed.respuesta || '¡Listo!') + accionesHtml, 'bot');
+      } catch (err) {
+        agregarMensajeChat('Error al conectar con Gemini: ' + err.message, 'bot');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Enviar a Gemini ✨';
+      }
+    };
+  </script>
+</body>
+</html>
