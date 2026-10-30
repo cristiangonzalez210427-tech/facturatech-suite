@@ -285,6 +285,7 @@
             <input type="text" id="buscarHistorial" placeholder="Buscar por NIT, asociación, contrato o fecha..." oninput="renderHistorial()" style="width:280px;" />
             <button type="button" class="btn-sec" onclick="exportarRespaldoJSON()">⬇ Exportar Copia Seguridad (.json)</button>
             <button type="button" class="btn-sec" onclick="document.getElementById('importJsonInput').click()">⬆ Restaurar Copia (.json)</button>
+            <button type="button" class="btn-danger" onclick="limpiarTodoElHistorial()">🗑 Borrar Todo el Historial</button>
             <input type="file" id="importJsonInput" accept=".json" style="display:none" onchange="importarRespaldoJSON(event)" />
           </div>
         </div>
@@ -296,7 +297,7 @@
     <div id="vista-ia" style="display:none;">
       <div class="card">
         <div class="card-title">
-          <span>✨ Copiloto IA con Google Gemini 2.5 Flash</span>
+          <span>✨ Copiloto IA con Google Gemini 3.8 Flash</span>
           <div style="display:flex; gap:8px; align-items:center;">
             <label style="margin:0;">API Key Gemini:</label>
             <input type="password" id="geminiApiKey" value="" style="width:240px;" onchange="guardarApiKey()" />
@@ -304,7 +305,7 @@
         </div>
         <div class="chat-box" id="chatBox">
           <div class="msg bot">
-            ¡Hola! Soy tu asistente conectado a <strong>Gemini 2.5 Flash</strong>. Puedo crear facturas proporcionales (sin decimales en cantidades), convertir textos en facturas de 73 columnas o armar tus Paz y Salvos automáticamente.<br><br>
+            ¡Hola! Soy tu asistente conectado a <strong>Gemini 3.8 Flash</strong>. Puedo crear facturas proporcionales (sin decimales en cantidades), convertir textos en facturas de 73 columnas o armar tus Paz y Salvos automáticamente.<br><br>
             <strong>Ejemplos que puedes pedirme:</strong><br>
             • <em>"Créame una factura proporcional para Fundación Sin Barrera por $24.500.000 y otra para Chaparral por $11.200.000"</em><br>
             • <em>"Hazme el Paz y Salvo de Octubre para Aposentos factura LC890 por $16.979.205"</em>
@@ -936,6 +937,16 @@
       }
     };
 
+    window.limpiarTodoElHistorial = function() {
+      if (!historialGuardado.length) { alert('El historial ya está vacío.'); return; }
+      if (confirm('¿Estás seguro de que deseas eliminar TODOS los registros del historial? Esta acción no se puede deshacer.')) {
+        historialGuardado = [];
+        localStorage.setItem('lgc_historial_v1', JSON.stringify([]));
+        actualizarBadgeHistorial();
+        renderHistorial();
+      }
+    };
+
     window.descargarUnaFactura = function(fIdx) {
       const f = todasLasFacturas[fIdx];
       const fecha = document.getElementById('fechaVenc').value;
@@ -1330,7 +1341,7 @@ Responde SIEMPRE en JSON válido con esta estructura exacta:
 }`;
 
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
