@@ -245,10 +245,21 @@ Santa Teresita, 18000000
             <label>Asociación / Cliente (Escribe ej: "sin barrera", "chaparral" o haz clic para ver las 51):</label>
             <input type="text" id="propClienteInput" autocomplete="off" placeholder="Escribe cualquier parte del nombre o NIT..." onfocus="filtrarEmpresas('propClienteInput', 'resProp', 'propNit')" oninput="filtrarEmpresas('propClienteInput', 'resProp', 'propNit')" />
             <div class="search-results" id="resProp"></div>
+            <div id="badgeInfoCanasta" style="display:none; margin-top:6px; font-size:12px; font-weight:700; color:#4338ca; background:#e0e7ff; padding:4px 8px; border-radius:6px;"></div>
           </div>
           <div>
             <label>NIT (sin dígito):</label>
             <input type="text" id="propNit" value="900244596" placeholder="Ej: 900244596" />
+          </div>
+          <div>
+            <label>Tipo de Canasta / Productos:</label>
+            <select id="propTipoCanasta" style="font-weight:600; font-size:12.5px;">
+              <option value="auto">⚡ Automático (Detectar por Asociación)</option>
+              <option value="completo">🛒 Abarrotes Completo (39 Ítems con Huevos y Arepas)</option>
+              <option value="solo_carnes">🥩 Solo Carnes / Proteínas (Verbenal y Refugio)</option>
+              <option value="sin_huevos">🥚 Abarrotes Sin Huevos (Sin Barrera)</option>
+              <option value="sin_arepas">🌽 Abarrotes Sin Arepas (Aposentos)</option>
+            </select>
           </div>
           <div>
             <label>Valor Total Objetivo ($):</label>
@@ -487,10 +498,46 @@ Santa Teresita, 18000000
       resDiv.style.display = 'block';
     };
 
+    window.detectarPerfilAsociacion = function(nit, nombre) {
+      const nomUpper = (nombre || '').toUpperCase();
+      const select = document.getElementById('propTipoCanasta');
+      const infoBadge = document.getElementById('badgeInfoCanasta');
+      if (!select) return;
+
+      if (nit === '800229362' || nit === '800138259' || nomUpper.includes('VERBENAL') || nomUpper.includes('REFUGIO') || nomUpper.includes('VERVENAL')) {
+        select.value = 'solo_carnes';
+        if (infoBadge) {
+          infoBadge.textContent = '🥩 Perfil detectado para ' + (nombre.substring(0, 35)) + ': Solo Carnes / Proteínas';
+          infoBadge.style.display = 'block';
+        }
+      } else if (nit === '900244596' || nomUpper.includes('SIN BARRERA')) {
+        select.value = 'sin_huevos';
+        if (infoBadge) {
+          infoBadge.textContent = '🥚 Perfil detectado para Sin Barrera: Abarrotes Sin Huevos';
+          infoBadge.style.display = 'block';
+        }
+      } else if (nit === '901753677' || nomUpper.includes('APOSENTO')) {
+        select.value = 'sin_arepas';
+        if (infoBadge) {
+          infoBadge.textContent = '🌽 Perfil detectado para Aposentos: Abarrotes Sin Arepa';
+          infoBadge.style.display = 'block';
+        }
+      } else {
+        select.value = 'completo';
+        if (infoBadge) {
+          infoBadge.textContent = '🛒 Perfil Estándar: Canasta Completa (39 Ítems)';
+          infoBadge.style.display = 'block';
+        }
+      }
+    };
+
     window.seleccionarEmpresa = function(inputId, resultsId, nitInputId, nit, nombre) {
       document.getElementById(inputId).value = nombre;
       document.getElementById(nitInputId).value = nit;
       document.getElementById(resultsId).style.display = 'none';
+      if (inputId === 'propClienteInput') {
+        detectarPerfilAsociacion(nit, nombre);
+      }
     };
 
     document.addEventListener('click', function(e) {
@@ -816,80 +863,164 @@ Santa Teresita, 18000000
       return Math.round(sum * 100) / 100;
     }
 
-    function construirFacturaProporcional(nit, valRaw, contrato) {
-      const totalBase = PLANTILLA_39_BASE.reduce((acc, it) => acc + calcularLinea(it.cantBase, it.valorUnitario, it.ivaPct).total, 0);
-      const factor = valRaw / totalBase;
+    function construirFacturaProporcional(nit, valRaw, contrato, tipoCanasta = null) {
+      const nombreEmpresa = DIRECTORIO_EMPRESAS[nit] || (document.getElementById('propClienteInput') ? document.getElementById('propClienteInput').value.trim() : '') || `CLIENTE NIT ${nit}`;
+      const nomUpper = nombreEmpresa.toUpperCase();
 
-      const items = PLANTILLA_39_BASE.map(it => ({
-        activo: true,
-        prefijo: it.prefijo,
-        descripcion: it.descripcion,
-        unidad: it.unidad,
-        cantidad: Math.max(1, Math.round(it.cantBase * factor)),
-        valorUnitario: it.valorUnitario,
-        ivaPct: it.ivaPct
-      }));
-
-      const idxAjuste = [12, 24, 37, 0, 11, 1, 4, 6, 7, 2, 5];
-      for (let iter = 0; iter < 400; iter++) {
-        const actual = calcularTotalItems(items);
-        const diff = valRaw - actual;
-        if (Math.abs(diff) < 195) break;
-        let mejorIdx = -1, mejorPaso = 0, menorError = Math.abs(diff);
-        for (const idx of idxAjuste) {
-          const precio = items[idx].valorUnitario;
-          const paso = diff > 0 ? 1 : -1;
-          if (items[idx].cantidad + paso < 1) continue;
-          const nuevoErr = Math.abs(diff - paso * precio);
-          if (nuevoErr < menorError) { menorError = nuevoErr; mejorIdx = idx; mejorPaso = paso; }
+      // Detección automática del perfil si no viene especificado o viene 'auto'
+      if (!tipoCanasta || tipoCanasta === 'auto') {
+        if (nit === '800229362' || nit === '800138259' || nomUpper.includes('VERBENAL') || nomUpper.includes('REFUGIO') || nomUpper.includes('VERVENAL')) {
+          tipoCanasta = 'solo_carnes';
+        } else if (nit === '900244596' || nomUpper.includes('SIN BARRERA')) {
+          tipoCanasta = 'sin_huevos';
+        } else if (nit === '901753677' || nomUpper.includes('APOSENTO')) {
+          tipoCanasta = 'sin_arepas';
+        } else {
+          tipoCanasta = 'completo';
         }
-        if (mejorIdx !== -1) items[mejorIdx].cantidad += mejorPaso;
-        else break;
       }
 
-      const actualPre = calcularTotalItems(items);
-      const rem = valRaw - actualPre;
-      if (Math.abs(rem) >= 1 && Math.abs(rem) <= 15000) {
-        let bestDelta = null, bestErr = Math.abs(rem);
-        for (let dSal = -4; dSal <= 4; dSal++) {
-          if (items[37].cantidad + dSal < 1) continue;
-          for (let dGal = -5; dGal <= 5; dGal++) {
-            if (items[0].cantidad + dGal < 1) continue;
-            for (let dHue = -5; dHue <= 5; dHue++) {
-              if (items[11].cantidad + dHue < 1) continue;
-              for (let dMan = -5; dMan <= 5; dMan++) {
-                if (items[1].cantidad + dMan < 1) continue;
-                const subDelta = dSal * 1528 + dGal * 870 + dHue * 750 + dMan * 650;
-                const falta = rem - subDelta;
-                const dPan = Math.round(falta / 390);
-                if (Math.abs(dPan) <= 12 && items[4].cantidad + dPan >= 1) {
-                  const err = Math.abs(rem - (subDelta + dPan * 390));
-                  if (err < bestErr) { bestErr = err; bestDelta = { dSal, dGal, dHue, dMan, dPan }; }
+      // Configurar estado activo según la canasta seleccionada
+      const items = PLANTILLA_39_BASE.map(it => {
+        let activo = true;
+        const desc = it.descripcion.toUpperCase();
+        const esCarne = desc.includes('CARNE') || desc.includes('HIGADO') || desc.includes('MOLLEJA') || desc.includes('POLLO') || desc.includes('RES') || desc.includes('CERDO') || desc.includes('QUESO');
+
+        if (tipoCanasta === 'solo_carnes') {
+          activo = esCarne;
+        } else if (tipoCanasta === 'sin_huevos') {
+          if (desc.includes('HUEVO')) activo = false;
+        } else if (tipoCanasta === 'sin_arepas') {
+          if (desc.includes('AREPA')) activo = false;
+        }
+
+        return {
+          activo,
+          prefijo: it.prefijo,
+          descripcion: it.descripcion,
+          unidad: it.unidad,
+          cantidad: 0,
+          valorUnitario: it.valorUnitario,
+          ivaPct: it.ivaPct
+        };
+      });
+
+      // Crear factura preliminar
+      const origenTexto = tipoCanasta === 'solo_carnes' ? 'Solo Carnes / Proteínas' : (tipoCanasta === 'sin_huevos' ? 'Abarrotes Sin Huevos' : 'Canasta 39 Ítems');
+      const fac = {
+        id: Date.now() + Math.random(),
+        fechaCreacion: new Date().toISOString().slice(0, 10),
+        origen: origenTexto,
+        cliente: nombreEmpresa,
+        nit: nit,
+        contrato: contrato || `${tipoCanasta === 'solo_carnes' ? 'CARNES ' : 'PROPORCIONAL '}$${valRaw.toLocaleString('es-CO')}`,
+        granTotalExcel: valRaw,
+        tipoCanasta: tipoCanasta,
+        items: items
+      };
+
+      // Ejecutar el cálculo y ajuste fino directamente sobre fac
+      const indicesActivos = [];
+      fac.items.forEach((it, idx) => { if (it.activo) indicesActivos.push(idx); });
+
+      if (indicesActivos.length > 0) {
+        let totalBaseActivos = 0;
+        indicesActivos.forEach(idx => {
+          const it = fac.items[idx];
+          totalBaseActivos += calcularLinea(it.cantBase || PLANTILLA_39_BASE[idx].cantBase, it.valorUnitario, it.ivaPct).total;
+        });
+        if (totalBaseActivos <= 0) totalBaseActivos = 1;
+        const factor = valRaw / totalBaseActivos;
+
+        indicesActivos.forEach(idx => {
+          const it = fac.items[idx];
+          const cantRef = PLANTILLA_39_BASE[idx].cantBase;
+          it.cantidad = Math.max(1, Math.round(cantRef * factor));
+        });
+
+        // Candidatos ordenados por precio final ascendente
+        const candidatosAjuste = indicesActivos.slice().sort((a, b) => {
+          const puA = fac.items[a].valorUnitario * (1 + fac.items[a].ivaPct / 100);
+          const puB = fac.items[b].valorUnitario * (1 + fac.items[b].ivaPct / 100);
+          return puA - puB;
+        });
+
+        for (let iter = 0; iter < 500; iter++) {
+          const actual = calcularTotalItems(fac.items);
+          const diff = valRaw - actual;
+          if (Math.abs(diff) < 100) break;
+          let mejorIdx = -1, mejorPaso = 0, menorErr = Math.abs(diff);
+          for (const idx of candidatosAjuste) {
+            const pu = fac.items[idx].valorUnitario * (1 + fac.items[idx].ivaPct / 100);
+            const paso = diff > 0 ? 1 : -1;
+            if (fac.items[idx].cantidad + paso < 1) continue;
+            const err = Math.abs(diff - paso * pu);
+            if (err < menorErr) { menorErr = err; mejorIdx = idx; mejorPaso = paso; }
+          }
+          if (mejorIdx !== -1) fac.items[mejorIdx].cantidad += mejorPaso;
+          else break;
+        }
+
+        // Combinatoria con los más económicos
+        const actualPre = calcularTotalItems(fac.items);
+        const rem = valRaw - actualPre;
+        if (Math.abs(rem) >= 1 && Math.abs(rem) <= 25000 && candidatosAjuste.length >= 2) {
+          const bajos = candidatosAjuste.slice(0, 4);
+          let bestDelta = null;
+          let bestErr = Math.abs(rem);
+
+          for (let d0 = -8; d0 <= 8; d0++) {
+            if (fac.items[bajos[0]].cantidad + d0 < 1) continue;
+            const p0 = fac.items[bajos[0]].valorUnitario * (1 + fac.items[bajos[0]].ivaPct / 100);
+            for (let d1 = -6; d1 <= 6; d1++) {
+              if (fac.items[bajos[1]].cantidad + d1 < 1) continue;
+              const p1 = fac.items[bajos[1]].valorUnitario * (1 + fac.items[bajos[1]].ivaPct / 100);
+
+              if (bajos.length >= 3) {
+                for (let d2 = -6; d2 <= 6; d2++) {
+                  if (fac.items[bajos[2]].cantidad + d2 < 1) continue;
+                  const p2 = fac.items[bajos[2]].valorUnitario * (1 + fac.items[bajos[2]].ivaPct / 100);
+                  const sub = d0 * p0 + d1 * p1 + d2 * p2;
+                  const falta = rem - sub;
+
+                  if (bajos.length >= 4) {
+                    const p3 = fac.items[bajos[3]].valorUnitario * (1 + fac.items[bajos[3]].ivaPct / 100);
+                    const d3 = Math.round(falta / p3);
+                    if (Math.abs(d3) <= 10 && fac.items[bajos[3]].cantidad + d3 >= 1) {
+                      const err = Math.abs(rem - (sub + d3 * p3));
+                      if (err < bestErr) {
+                        bestErr = err;
+                        bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1, [bajos[2]]: d2, [bajos[3]]: d3 };
+                      }
+                    }
+                  } else {
+                    const err = Math.abs(rem - sub);
+                    if (err < bestErr) {
+                      bestErr = err;
+                      bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1, [bajos[2]]: d2 };
+                    }
+                  }
+                }
+              } else {
+                const sub = d0 * p0 + d1 * p1;
+                const err = Math.abs(rem - sub);
+                if (err < bestErr) {
+                  bestErr = err;
+                  bestDelta = { [bajos[0]]: d0, [bajos[1]]: d1 };
                 }
               }
             }
           }
-        }
-        if (bestDelta) {
-          items[37].cantidad += bestDelta.dSal;
-          items[0].cantidad  += bestDelta.dGal;
-          items[11].cantidad += bestDelta.dHue;
-          items[1].cantidad  += bestDelta.dMan;
-          items[4].cantidad  += bestDelta.dPan;
+
+          if (bestDelta) {
+            for (const [idxStr, delta] of Object.entries(bestDelta)) {
+              fac.items[Number(idxStr)].cantidad += delta;
+            }
+          }
         }
       }
 
-      const nombreEmpresa = DIRECTORIO_EMPRESAS[nit] || document.getElementById('propClienteInput').value.trim() || `CLIENTE NIT ${nit}`;
-      return {
-        id: Date.now() + Math.random(),
-        fechaCreacion: new Date().toISOString().slice(0, 10),
-        origen: 'Proporcional 39 Ítems',
-        cliente: nombreEmpresa,
-        nit: nit,
-        contrato: contrato || `PROPORCIONAL $${valRaw.toLocaleString('es-CO')}`,
-        granTotalExcel: valRaw,
-        items: items
-      };
+      return fac;
     }
 
     window.agregarFacturaProporcional = function() {
