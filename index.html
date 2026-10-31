@@ -395,18 +395,29 @@ Santa Teresita, 18000000
 
       <div class="card">
         <div class="card-title">
-          <span>B. O Cargar / Pegar Tablas desde Excel (.xlsx / Ctrl+V)</span>
+          <span>B. Cargar Archivos Excel, Pegar Celdas o Escanear Imágenes de WhatsApp con IA</span>
         </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px;">
+          <!-- 1. Archivo Excel -->
           <div class="dropzone" id="dropzone">
-            <strong style="color:var(--primary); font-size:14.5px;">Haz clic o arrastra aquí tus archivos Excel (.xlsx / .csv)</strong>
-            <p style="margin:6px 0 0; font-size:12.5px; color:var(--muted);">Extrae todas las facturas, NITs, unidades e IVA (5% y 19%)</p>
+            <strong style="color:var(--primary); font-size:14px;">📂 Cargar Excel (.xlsx / .csv)</strong>
+            <p style="margin:4px 0 0; font-size:12px; color:var(--muted);">Arrastra aquí tus archivos Excel</p>
             <input type="file" id="fileInput" accept=".xlsx,.csv,.txt" multiple style="display:none" />
-            <div id="statusArchivo" style="margin-top:8px; font-size:12.5px; font-weight:700; color:var(--ok);"></div>
+            <div id="statusArchivo" style="margin-top:6px; font-size:12px; font-weight:700; color:var(--ok);"></div>
           </div>
+
+          <!-- 2. Pegar Celdas de Excel -->
           <div>
-            <textarea id="txtPaste" style="height:82px; margin-bottom:8px;" placeholder="O selecciona las celdas en Excel, copia (Ctrl+C) y pega aquí (Ctrl+V)..."></textarea>
-            <button type="button" class="btn-sec" onclick="procesarTextoPegado()">Procesar Celdas Pegadas</button>
+            <textarea id="txtPaste" style="height:76px; margin-bottom:6px; font-size:12px;" placeholder="O copia celdas en Excel (Ctrl+C) y pégalas aquí (Ctrl+V)..."></textarea>
+            <button type="button" class="btn-sec" style="width:100%; justify-content:center; font-size:12px;" onclick="procesarTextoPegado()">📋 Procesar Celdas Pegadas</button>
+          </div>
+
+          <!-- 3. Escanear Foto o Captura de WhatsApp -->
+          <div class="dropzone" id="dropzoneImg" style="border-color:#3b82f6; background:#eff6ff;" onclick="document.getElementById('imgInput').click()">
+            <strong style="color:#2563eb; font-size:14px;">📸 Escanear Foto / Captura con IA</strong>
+            <p style="margin:4px 0 0; font-size:12px; color:var(--muted);">Arrastra una foto de WhatsApp o presiona <b>Ctrl+V</b></p>
+            <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="if(this.files.length) procesarArchivoImagen(this.files[0])" />
+            <div id="statusImg" style="margin-top:6px; font-size:12px; font-weight:700; color:#2563eb;"></div>
           </div>
         </div>
       </div>
@@ -2671,6 +2682,188 @@ function extraerFacturas(rows, origen) {
       }
     };
 
+    // ================= ESCÁNER DE IMÁGENES Y CAPTURAS CON IA (GEMINI VISION) =================
+    window.procesarArchivoImagen = async function(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        alert('Por favor selecciona un archivo de imagen válido (PNG, JPG, JPEG, WEBP).');
+        return;
+      }
+
+      let apiKey = (document.getElementById('geminiApiKey') ? document.getElementById('geminiApiKey').value.trim() : '') || localStorage.getItem('lgc_gemini_key') || '';
+      if (!apiKey) {
+        apiKey = prompt('Para escanear fotos y capturas de WhatsApp directamente en la app, ingresa tu API Key gratuita de Gemini (la obtienes gratis en aistudio.google.com):');
+        if (!apiKey || !apiKey.trim()) {
+          alert('Se requiere una API Key de Gemini para el escaneo visual de imágenes.');
+          return;
+        }
+        apiKey = apiKey.trim();
+        localStorage.setItem('lgc_gemini_key', apiKey);
+        if (document.getElementById('geminiApiKey')) document.getElementById('geminiApiKey').value = apiKey;
+      }
+
+      const status = document.getElementById('statusImg');
+      if (status) {
+        status.style.color = '#2563eb';
+        status.innerHTML = '⏳ Escaneando tabla con IA Gemini Vision...';
+      }
+
+      try {
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const promptVision = `Eres un experto extractor de tablas de facturación de alimentos e ICBF para La Gran Cosecha.
+Analiza con total precisión esta imagen y extrae la tabla completa.
+Directorio de empresas conocido (NIT -> Nombre): ${JSON.stringify(DIRECTORIO_EMPRESAS)}.
+
+REGLAS DE EXTRACCIÓN:
+1. Detecta el título o contrato (ej: "12 RPP MES DE OCTUBRE CHOCONTA" o similar).
+2. Si el título menciona CHOCONTA o SIN BARRERA -> NIT "900244596" y cliente "FUNDACION SIN BARRERA".
+3. Si el título menciona FACA o LOS OSITOS -> NIT "800136100" y cliente "ASOCIACION LOS OSITOS".
+4. Extrae CADA UNO de los productos de la tabla sin omitir ninguno:
+   - descripcion: Nombre limpio del producto en mayúsculas (ej: "ARROZ", "TRANSPORTE Y LOGISTICA").
+   - unidad: Unidad DIAN válida: LBR (libras), LTR (litros), 94 (unidades, paquetes, bolsas, cajas), KGM (kilos), PA (paquete).
+   - cantidad: Número entero o decimal.
+   - valorUnitario: Precio unitario numérico (sin puntos de miles).
+   - total: Subtotal numérico.
+   - ivaPct: 0 (todos son 0 a menos que explícitamente se indique 19 o 5).
+5. Gran total de la factura.
+
+Responde ÚNICAMENTE en JSON válido con esta estructura exacta:
+{
+  "cliente": "FUNDACION SIN BARRERA",
+  "nit": "900244596",
+  "contrato": "12 RPP MES DE OCTUBRE CHOCONTA",
+  "granTotal": 2214924,
+  "items": [
+    { "descripcion": "ARROZ", "unidad": "LBR", "cantidad": 31, "valorUnitario": 2950, "ivaPct": 0 },
+    { "descripcion": "PASTA ALIMENTICIA", "unidad": "LBR", "cantidad": 17, "valorUnitario": 6152.71, "ivaPct": 0 }
+  ]
+}`;
+
+        let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              role: 'user',
+              parts: [
+                { text: promptVision },
+                { inline_data: { mime_type: file.type || 'image/png', data: base64Data } }
+              ]
+            }],
+            generationConfig: { responseMimeType: 'application/json' }
+          })
+        });
+
+        if (!res.ok) {
+          // Fallback a gemini-1.5-flash
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                role: 'user',
+                parts: [
+                  { text: promptVision },
+                  { inline_data: { mime_type: file.type || 'image/png', data: base64Data } }
+                ]
+              }],
+              generationConfig: { responseMimeType: 'application/json' }
+            })
+          });
+        }
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+
+        const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+        const parsed = JSON.parse(rawJson);
+
+        if (!parsed.items || !Array.isArray(parsed.items) || parsed.items.length === 0) {
+          throw new Error('No se detectaron productos en la imagen. Verifica que la foto sea clara.');
+        }
+
+        const nitFinal = String(parsed.nit || '900244596');
+        const nombreFinal = parsed.cliente || DIRECTORIO_EMPRESAS[nitFinal] || `CLIENTE NIT ${nitFinal}`;
+        const items = parsed.items.map(it => {
+          const desc = limpiarDesc(it.descripcion || 'PRODUCTO');
+          return {
+            activo: true,
+            prefijo: obtenerPrefijo(desc),
+            descripcion: desc,
+            unidad: it.unidad || detectarUnidad(desc),
+            cantidad: Number(it.cantidad) || 1,
+            valorUnitario: Math.round(Number(it.valorUnitario || 0) * 100) / 100,
+            ivaPct: normalizarIvaTarifa(it.ivaPct || 0)
+          };
+        });
+
+        const fac = {
+          id: Date.now() + Math.random(),
+          fechaCreacion: new Date().toISOString().slice(0, 10),
+          origen: `📸 Captura IA (${file.name || 'WhatsApp'})`,
+          cliente: nombreFinal,
+          nit: nitFinal,
+          contrato: parsed.contrato || `FACTURA ${nombreFinal}`,
+          granTotalExcel: Number(parsed.granTotal) || calcularTotalItems(items),
+          tipoCanasta: 'ia_vision',
+          items: items
+        };
+
+        todasLasFacturas.push(fac);
+        guardarFacturaEnHistorial(fac);
+        renderFacturas();
+
+        if (status) {
+          status.style.color = 'var(--ok)';
+          status.innerHTML = `✅ ¡Listo! ${items.length} productos cargados ($${(parsed.granTotal || calcularTotalItems(items)).toLocaleString('es-CO')})`;
+        }
+      } catch (err) {
+        if (status) {
+          status.style.color = '#dc2626';
+          status.innerHTML = '❌ Error: ' + err.message;
+        }
+        alert('Error al escanear la imagen con IA: ' + err.message);
+      }
+    };
+
+    // Pegar imágenes directamente desde el portapapeles con Ctrl+V
+    window.addEventListener('paste', function(e) {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        // Si el usuario está pegando en una caja de texto, respetar el texto
+        if (e.clipboardData && e.clipboardData.types.includes('text/plain')) return;
+      }
+      const items = e.clipboardData ? e.clipboardData.items : [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type && items[i].type.startsWith('image/')) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            e.preventDefault();
+            procesarArchivoImagen(blob);
+            break;
+          }
+        }
+      }
+    });
+
+    // Drag and drop para zona de imagen
+    setTimeout(() => {
+      const dzImg = document.getElementById('dropzoneImg');
+      if (dzImg) {
+        dzImg.addEventListener('dragover', e => { e.preventDefault(); dzImg.style.borderColor = '#1d4ed8'; dzImg.style.background = '#dbeafe'; });
+        dzImg.addEventListener('dragleave', () => { dzImg.style.borderColor = '#3b82f6'; dzImg.style.background = '#eff6ff'; });
+        dzImg.addEventListener('drop', e => {
+          e.preventDefault();
+          dzImg.style.borderColor = '#3b82f6'; dzImg.style.background = '#eff6ff';
+          if (e.dataTransfer.files.length) procesarArchivoImagen(e.dataTransfer.files[0]);
+        });
+      }
+    }, 500);
+
     // --- EVENTOS ARCHIVOS EXCEL / PEGAR ---
     async function procesarArchivos(files) {
       const status = document.getElementById('statusArchivo');
@@ -2751,7 +2944,7 @@ Responde SIEMPRE en JSON válido con esta estructura exacta:
 }`;
 
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
