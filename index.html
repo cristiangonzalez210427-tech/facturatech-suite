@@ -366,6 +366,7 @@ Santa Teresita, 18000000
               <option value="refrigerios_lumed">🥤 Refrigerios LUMED (Leche, Huevos, Pan)</option>
               <option value="refrigerios_base">🥤 Refrigerios General (Bebida láctea, Panadería, Fruta, Huevo)</option>
               <option value="rpp">📦 RPP Faca Anny / Los Ositos (113 Paquetes: Arroz, Leche, Arepa, Spaghetti, Arverja, Huevos)</option>
+                <option value="rpp_sin_barrera">📦 RPP Sin Barrera Chocontá (12 Paquetes - 21 Ítems con Transporte y Empaques)</option>
             </select>
           </div>
           <div>
@@ -388,6 +389,7 @@ Santa Teresita, 18000000
           <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('cosecha_faca')">🌾 Cosecha Faca Anny ($8.528.100)</button>
           <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('refri_1075')">🥤 Refrigerios 1075 ($1.004.512)</button>
           <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('refri_1077')">🥤 Refrigerios 1077 ($1.087.943)</button>
+          <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px; background:#ecfdf5; border-color:#059669; color:#065f46; font-weight:700;" onclick="cargarPresetRapido('rpp_sin_barrera')">📦 RPP Sin Barrera Chocontá ($2.214.924 - 12 Paq)</button>
         </div>
       </div>
 
@@ -611,6 +613,29 @@ Santa Teresita, 18000000
         { prefijo: 'LEC', descripcion: 'LECHE UHT LARGA VIDA X 200ML', unidad: '94', valorUnitario: 1300, ivaPct: 0, pesoRelativo: 0.49, cantBase: 2478 },
         { prefijo: 'HUE', descripcion: 'HUEVOS', unidad: '94', valorUnitario: 650, ivaPct: 0, pesoRelativo: 0.21, cantBase: 2145 },
         { prefijo: 'PAN', descripcion: 'PAN UNIDAD 40 GR', unidad: '94', valorUnitario: 850, ivaPct: 0, pesoRelativo: 0.30, cantBase: 2271 }
+      ],
+      'rpp_sin_barrera': [
+        { prefijo: 'ARR', descripcion: 'ARROZ', unidad: 'LBR', valorUnitario: 2950, ivaPct: 0, cantBase: 31 },
+        { prefijo: 'PAS', descripcion: 'PASTA ALIMENTICIA', unidad: 'LBR', valorUnitario: 6152.71, ivaPct: 0, cantBase: 17 },
+        { prefijo: 'HAR', descripcion: 'HARINA DE MAIZ', unidad: 'LBR', valorUnitario: 4100, ivaPct: 0, cantBase: 17 },
+        { prefijo: 'HAR', descripcion: 'HARINA DE TRIGO', unidad: 'LBR', valorUnitario: 4477, ivaPct: 0, cantBase: 10 },
+        { prefijo: 'AVE', descripcion: 'AVENA EN OJUELAS', unidad: 'LBR', valorUnitario: 7714, ivaPct: 0, cantBase: 5 },
+        { prefijo: 'PER', descripcion: 'PERA', unidad: 'LBR', valorUnitario: 11000, ivaPct: 0, cantBase: 17 },
+        { prefijo: 'PLA', descripcion: 'PLATANO', unidad: 'LBR', valorUnitario: 8800, ivaPct: 0, cantBase: 17 },
+        { prefijo: 'AHU', descripcion: 'AHUYAMA', unidad: 'LBR', valorUnitario: 6600, ivaPct: 0, cantBase: 17 },
+        { prefijo: 'LEC', descripcion: 'LECHE EN POLVO 900 GRS', unidad: '94', valorUnitario: 38500, ivaPct: 0, cantBase: 5 },
+        { prefijo: 'LEC', descripcion: 'LECHE LIQUIDA', unidad: '94', valorUnitario: 5100, ivaPct: 0, cantBase: 38 },
+        { prefijo: 'QUE', descripcion: 'QUESO DOBLE CREMA 250 GR', unidad: '94', valorUnitario: 9900, ivaPct: 0, cantBase: 9 },
+        { prefijo: 'HUE', descripcion: 'HUEVO DE GALLINA AA', unidad: '94', valorUnitario: 600, ivaPct: 0, cantBase: 315 },
+        { prefijo: 'FRI', descripcion: 'FRIJOLES', unidad: 'LBR', valorUnitario: 7900, ivaPct: 0, cantBase: 14 },
+        { prefijo: 'LEN', descripcion: 'LENTEJA', unidad: 'LBR', valorUnitario: 5200, ivaPct: 0, cantBase: 22 },
+        { prefijo: 'GAR', descripcion: 'GARBANZO', unidad: 'LBR', valorUnitario: 5600, ivaPct: 0, cantBase: 5 },
+        { prefijo: 'ACE', descripcion: 'ACEITE DE SOJA 1 LITRO', unidad: '94', valorUnitario: 15072, ivaPct: 0, cantBase: 5 },
+        { prefijo: 'ACE', descripcion: 'ACEITE DE SOJA DE 500 CC', unidad: '94', valorUnitario: 6500, ivaPct: 0, cantBase: 7 },
+        { prefijo: 'PAN', descripcion: 'PANELA DE 500 GR', unidad: '94', valorUnitario: 6000, ivaPct: 0, cantBase: 5 },
+        { prefijo: 'PAN', descripcion: 'PANELA 250 GR', unidad: '94', valorUnitario: 4700, ivaPct: 0, cantBase: 4 },
+        { prefijo: 'TRA', descripcion: 'TRANSPORTE Y LOGISTICA', unidad: '94', valorUnitario: 15498.17, ivaPct: 0, cantBase: 12 },
+        { prefijo: 'EMP', descripcion: 'EMPAQUES Y STIKERS', unidad: '94', valorUnitario: 12000, ivaPct: 0, cantBase: 12 }
       ],
       'rpp': [
         { prefijo: 'ARR', descripcion: 'ARROZ', unidad: 'LBR', valorUnitario: 2300, ivaPct: 0, pesoRelativo: 0.10, cantBase: 113, ratioPack: 1 },
@@ -954,6 +979,13 @@ Santa Teresita, 18000000
         document.getElementById('propValor').value = '1087943';
         document.getElementById('propContrato').value = 'CONTRATO 1077 GIRARDOT REFRIS';
         agregarFacturaProporcional();
+      } else if (tipo === 'rpp_sin_barrera') {
+        document.getElementById('propClienteInput').value = 'FUNDACION SIN BARRERA';
+        document.getElementById('propNit').value = '900244596';
+        document.getElementById('propTipoCanasta').value = 'rpp_sin_barrera';
+        document.getElementById('propValor').value = '2214924';
+        document.getElementById('propContrato').value = '12 RPP MES DE OCTUBRE CHOCONTA';
+        agregarFacturaProporcional();
       }
     };
 
@@ -1085,6 +1117,27 @@ Santa Teresita, 18000000
     }
 
     function ajustarAFin(fac, valRaw) {
+      if (fac.tipoCanasta === 'rpp_sin_barrera') {
+        // En RPP Sin Barrera Chocontá, respetar cantidades exactas de la tabla oficial (31, 17, 17, 10, 5, 17, ...)
+        fac.items.forEach(it => {
+          it.cantidad = it.cantBase || 1;
+        });
+        if (Math.abs(valRaw - 2214924) <= 5) {
+          // Precios unitarios oficiales exactos de la tabla
+          const pPasta = fac.items.find(i => i.prefijo === 'PAS' || i.descripcion.includes('PASTA'));
+          const pTransp = fac.items.find(i => i.prefijo === 'TRA' || i.descripcion.includes('TRANSPORTE'));
+          if (pPasta) pPasta.valorUnitario = 6152.71;
+          if (pTransp) pTransp.valorUnitario = 15498.16;
+          // Ajuste centavo fino para $2.214.924,00 exacto
+          const diffP = 2214924 - calcularTotalItems(fac.items);
+          if (Math.abs(diffP) > 0.001) {
+            const itAdj = fac.items.find(i => i.prefijo === 'AHU' || i.descripcion.includes('AHUYAMA')) || fac.items[0];
+            itAdj.valorUnitario = Math.round((itAdj.valorUnitario + (diffP / itAdj.cantidad)) * 100) / 100;
+          }
+          return;
+        }
+      }
+
       if (fac.tipoCanasta === 'rpp') {
         // En RPP los paquetes son sagrados y las cantidades deben coincidir exactamente con el número de paquetes.
         let numPaquetes = 113; // default oficial Faca Anny / Los Ositos
@@ -1316,7 +1369,10 @@ Santa Teresita, 18000000
       let items = [];
       let origenTexto = '🛒 Canasta 39 Ítems';
 
-      if (tipoCanasta === 'rpp') {
+      if (tipoCanasta === 'rpp_sin_barrera') {
+        items = PLANTILLAS_REFRIGERIOS['rpp_sin_barrera'].map(it => ({ ...it, activo: true, cantidad: it.cantBase }));
+        origenTexto = '📦 RPP Sin Barrera Chocontá (12 Paquetes)';
+      } else if (tipoCanasta === 'rpp') {
         items = PLANTILLAS_REFRIGERIOS['rpp'].map(it => ({ ...it, activo: true, cantidad: 0 }));
         origenTexto = '📦 RPP (Ración para Preparar)';
       } else if (tipoCanasta === 'refrigerios_1075') {
@@ -1987,7 +2043,9 @@ function extraerFacturas(rows, origen) {
       
       let detalle = '';
       const contraUpper = (fac.contrato || '').toUpperCase();
-      if (fac.tipoCanasta === 'rpp' || contraUpper.includes('RPP')) {
+      if (fac.tipoCanasta === 'rpp_sin_barrera' || (contraUpper.includes('RPP') && (contraUpper.includes('CHOCONTA') || contraUpper.includes('BARRERA')))) {
+        detalle = 'RPP_12_PAQ_CHOCONTA';
+      } else if (fac.tipoCanasta === 'rpp' || contraUpper.includes('RPP')) {
         detalle = 'RPP_113_PAQ';
       } else if (fac.tipoCanasta === 'refrigerios_1075' || contraUpper.includes('1075')) {
         detalle = 'REFRI_1075_LA_MESA';
