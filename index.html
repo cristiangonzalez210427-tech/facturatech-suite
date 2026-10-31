@@ -392,6 +392,7 @@ Santa Teresita, 18000000
           <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('refri_1077')">🥤 Refrigerios 1077 ($1.087.943)</button>
           <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px; background:#ecfdf5; border-color:#059669; color:#065f46; font-weight:700;" onclick="cargarPresetRapido('rpp_sin_barrera')">📦 RPP Sin Barrera Chocontá ($2.214.924 - 12 Paq)</button>
           <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px; background:#eff6ff; border-color:#2563eb; color:#1e40af; font-weight:800;" onclick="cargarPresetRapido('viveres_sin_barrera')">🛒 Víveres Sin Barrera ($40.762.369)</button>
+          <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px; background:#fefce8; border-color:#ca8a04; color:#854d0e; font-weight:800;" onclick="cargarPresetRapido('cosecha_sin_barrera')">🌾 Cosecha Sin Barrera ($13.725.234)</button>
           <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px; background:#fef2f2; border-color:#dc2626; color:#991b1b; font-weight:700;" onclick="cargarPresetRapido('refri_sin_barrera')">🥤 Refrigerios Sin Barrera ($116.804)</button>
         </div>
       </div>
@@ -1071,6 +1072,13 @@ Santa Teresita, 18000000
         document.getElementById('propValor').value = '40762369';
         document.getElementById('propContrato').value = 'JHON BALAGUERA - VIVERES';
         agregarFacturaProporcional();
+      } else if (tipo === 'cosecha_sin_barrera') {
+        document.getElementById('propClienteInput').value = 'FUNDACION SIN BARRERA';
+        document.getElementById('propNit').value = '900244596';
+        document.getElementById('propTipoCanasta').value = 'viveres_sin_barrera';
+        document.getElementById('propValor').value = '13725234';
+        document.getElementById('propContrato').value = 'CONTRATO LA GRAN COSECHA';
+        agregarFacturaProporcional();
       } else if (tipo === 'refri_sin_barrera') {
         document.getElementById('propClienteInput').value = 'FUNDACION SIN BARRERA';
         document.getElementById('propNit').value = '900244596';
@@ -1240,13 +1248,22 @@ Santa Teresita, 18000000
         return;
       }
 
-      if (fac.tipoCanasta === 'viveres_sin_barrera' || (fac.nit === '900244596' && Math.abs(valRaw - 40762369) <= 10)) {
+      if (fac.tipoCanasta === 'viveres_sin_barrera' || (fac.nit === '900244596' && (Math.abs(valRaw - 40762369) <= 10 || Math.abs(valRaw - 13725234) <= 10))) {
         if (Math.abs(valRaw - 40762369) <= 10) {
-          // Solución matemática exacta de 39 ítems oficiales con $0.00 de diferencia y precios contractuales intactos
+          // Solución matemática exacta de 39 ítems oficiales con $0.00 de diferencia y precios contractuales intactos ($40.762.369)
           const cantOficiales = [886, 1326, 847, 423, 2115, 847, 1692, 1268, 34, 34, 425, 5035, 759, 185, 34, 23, 185, 99, 63, 14, 14, 104, 136, 34, 732, 34, 271, 34, 34, 31, 68, 68, 68, 169, 68, 202, 68, 75, 36];
           fac.items.forEach((it, idx) => {
             it.activo = true;
             it.cantidad = cantOficiales[idx] || it.cantidad;
+          });
+          return;
+        }
+        if (Math.abs(valRaw - 13725234) <= 10) {
+          // Solución matemática exacta Cosecha Sin Barrera ($13.725.234) con $0.00 de diferencia y precios contractuales intactos
+          const cantCosechaSB = [300, 436, 285, 142, 717, 285, 570, 427, 11, 11, 143, 1685, 256, 64, 11, 8, 62, 33, 9, 5, 5, 35, 46, 11, 246, 11, 99, 11, 11, 10, 23, 23, 23, 57, 29, 72, 23, 25, 14];
+          fac.items.forEach((it, idx) => {
+            it.activo = true;
+            it.cantidad = cantCosechaSB[idx] || it.cantidad;
           });
           return;
         }
@@ -2175,6 +2192,8 @@ function extraerFacturas(rows, origen) {
         detalle = 'RPP_12_PAQ_CHOCONTA';
       } else if (fac.tipoCanasta === 'refrigerios_sin_barrera' || (contraUpper.includes('REFRI') && (contraUpper.includes('CHOCONTA') || contraUpper.includes('BARRERA')))) {
         detalle = 'REFRI_CHOCONTA_35_REFRIS';
+      } else if (fac.nit === '900244596' && Math.abs((fac.granTotalExcel || 0) - 13725234) <= 100) {
+        detalle = 'COSECHA_13725234';
       } else if (fac.tipoCanasta === 'viveres_sin_barrera' || (contraUpper.includes('VIVERES') && contraUpper.includes('BARRERA'))) {
         detalle = 'VIVERES_39_ITEMS';
       } else if (fac.tipoCanasta === 'rpp' || contraUpper.includes('RPP')) {
