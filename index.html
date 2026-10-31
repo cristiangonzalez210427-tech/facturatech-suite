@@ -1821,17 +1821,23 @@ function extraerFacturas(rows, origen) {
           continue;
         }
 
-        // 3. Contrato
-        const idxContrato = vals.findIndex(x => (x || '').toUpperCase().startsWith('CONTRATO'));
-        if (idxContrato !== -1) {
+        // 3. Contrato o Título RPP (ej: PARA FACTURAR 12 RPP MES DE OCTUBRE CHOCONTA)
+        if (textoFila.includes('PARA FACTURAR') || textoFila.includes('RPP MES') || textoFila.startsWith('CONTRATO')) {
           if (itemsActuales.length > 0) guardarSiHay();
-          contratoActual = vals[idxContrato];
+          contratoActual = textoFila;
+          if (textoFila.includes('CHOCONTA') || textoFila.includes('SIN BARRERA')) {
+            nitActual = '900244596';
+            clienteActual = 'FUNDACION SIN BARRERA';
+          } else if (textoFila.includes('FACA') || textoFila.includes('OSITOS')) {
+            nitActual = '800136100';
+            clienteActual = 'ASOCIACION LOS OSITOS';
+          }
           enItems = false;
           continue;
         }
 
-        // 4. Encabezado de productos (ALIMENTO, PRODUCTO, DESCRIPCION)
-        const idxAlim = vals.findIndex(x => ['ALIMENTO', 'PRODUCTO', 'DESCRIPCION', 'DETALLE'].includes((x || '').toUpperCase()));
+        // 4. Encabezado de productos (ALIMENTO, PRODUCTO, DESCRIPCION, ARTICULO)
+        const idxAlim = vals.findIndex(x => ['ALIMENTO', 'PRODUCTO', 'DESCRIPCION', 'DETALLE', 'ARTICULO', 'ITEM'].includes((x || '').trim().toUpperCase()));
         if (idxAlim !== -1) {
           colAlimento = idxAlim;
           colUnidad = -1;
@@ -1841,11 +1847,11 @@ function extraerFacturas(rows, origen) {
 
           for (let c = idxAlim + 1; c < vals.length; c++) {
             const h = (vals[c] || '').toUpperCase();
-            if (h.includes('UNIDAD') || h.includes('MEDIDA')) {
+            if (h.includes('UNIDAD') || h.includes('MEDIDA') || h.includes('PRESENTACION')) {
               colUnidad = c;
-            } else if (h.includes('CANT')) {
+            } else if (h.includes('CANT') || h.includes('COMPRAR')) {
               colCantidad = c;
-            } else if ((h.includes('UNIT') || h.includes('PRECIO') || h.includes('VALOR')) && !h.includes('TOTAL')) {
+            } else if ((h.includes('UNIT') || h.includes('PRECIO') || h.includes('VALOR')) && !h.includes('FINAL') && !h.includes('TOTAL FINAL')) {
               if (colVunit === -1) colVunit = c;
             } else if (h.includes('IVA') && !h.includes('TOTAL')) {
               colIva = c;
@@ -1861,7 +1867,7 @@ function extraerFacturas(rows, origen) {
         }
 
         // 5. Gran Total
-        if (textoFila.includes('GRAN TOTAL') || textoFila.includes('TOTAL FACTURA')) {
+        if (textoFila.includes('GRAN TOTAL') || textoFila.includes('TOTAL FACTURA') || textoFila.includes('VALOR FACTURA')) {
           const nums = vals.map(limpiarNumero).filter(n => n > 0);
           if (nums.length > 0) granTotalExcel = nums[nums.length - 1];
           guardarSiHay();
