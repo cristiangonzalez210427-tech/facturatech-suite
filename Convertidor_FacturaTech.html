@@ -356,9 +356,10 @@ Santa Teresita, 18000000
             <label>Tipo de Canasta / Productos:</label>
             <select id="propTipoCanasta" style="font-weight:600; font-size:12.5px;">
               <option value="auto">⚡ Automático (Detectar por Asociación / Contrato)</option>
+              <option value="viveres_sin_barrera">🛒 Víveres Fundación Sin Barrera (39 Ítems Oficiales)</option>
               <option value="completo">🛒 Abarrotes Completo (39 Ítems con Huevos y Arepas)</option>
               <option value="solo_carnes">🥩 Solo Carnes / Proteínas (Verbenal y Refugio)</option>
-              <option value="sin_huevos">🥚 Abarrotes Sin Huevos (Sin Barrera)</option>
+              <option value="sin_huevos">🥚 Abarrotes Sin Huevos</option>
               <option value="sin_arepas">🌽 Abarrotes Sin Arepas (Aposentos)</option>
               <option value="refrigerios_1075">🥤 Refrigerios 1075 La Mesa (Chaparral: Leche, Galleta, Huevos, Manzana)</option>
               <option value="refrigerios_1077">🥤 Refrigerios 1077 Girardot (Santa Teresita: Yogurt, Pan, Huevos, Manzana)</option>
@@ -390,6 +391,8 @@ Santa Teresita, 18000000
           <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('refri_1075')">🥤 Refrigerios 1075 ($1.004.512)</button>
           <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px;" onclick="cargarPresetRapido('refri_1077')">🥤 Refrigerios 1077 ($1.087.943)</button>
           <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px; background:#ecfdf5; border-color:#059669; color:#065f46; font-weight:700;" onclick="cargarPresetRapido('rpp_sin_barrera')">📦 RPP Sin Barrera Chocontá ($2.214.924 - 12 Paq)</button>
+          <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px; background:#eff6ff; border-color:#2563eb; color:#1e40af; font-weight:800;" onclick="cargarPresetRapido('viveres_sin_barrera')">🛒 Víveres Sin Barrera ($40.762.369)</button>
+          <button type="button" class="btn-sec" style="font-size:11.5px; padding:4px 10px; background:#fef2f2; border-color:#dc2626; color:#991b1b; font-weight:700;" onclick="cargarPresetRapido('refri_sin_barrera')">🥤 Refrigerios Sin Barrera ($116.804)</button>
         </div>
       </div>
 
@@ -997,6 +1000,20 @@ Santa Teresita, 18000000
         document.getElementById('propValor').value = '2214924';
         document.getElementById('propContrato').value = '12 RPP MES DE OCTUBRE CHOCONTA';
         agregarFacturaProporcional();
+      } else if (tipo === 'viveres_sin_barrera') {
+        document.getElementById('propClienteInput').value = 'FUNDACION SIN BARRERA';
+        document.getElementById('propNit').value = '900244596';
+        document.getElementById('propTipoCanasta').value = 'viveres_sin_barrera';
+        document.getElementById('propValor').value = '40762369';
+        document.getElementById('propContrato').value = 'JHON BALAGUERA - VIVERES';
+        agregarFacturaProporcional();
+      } else if (tipo === 'refri_sin_barrera') {
+        document.getElementById('propClienteInput').value = 'FUNDACION SIN BARRERA';
+        document.getElementById('propNit').value = '900244596';
+        document.getElementById('propTipoCanasta').value = 'refrigerios_sin_barrera';
+        document.getElementById('propValor').value = '116804';
+        document.getElementById('propContrato').value = 'JHON BALAGUERA - REFRIGERIOS';
+        agregarFacturaProporcional();
       }
     };
 
@@ -1145,6 +1162,18 @@ Santa Teresita, 18000000
             const itAdj = fac.items.find(i => i.prefijo === 'AHU' || i.descripcion.includes('AHUYAMA')) || fac.items[0];
             itAdj.valorUnitario = Math.round((itAdj.valorUnitario + (diffP / itAdj.cantidad)) * 100) / 100;
           }
+          return;
+        }
+      }
+
+      if (fac.tipoCanasta === 'viveres_sin_barrera' || (fac.nit === '900244596' && Math.abs(valRaw - 40762369) <= 10)) {
+        if (Math.abs(valRaw - 40762369) <= 10) {
+          // Solución matemática exacta de 39 ítems oficiales con $0.00 de diferencia y precios contractuales intactos
+          const cantOficiales = [886, 1326, 847, 423, 2115, 847, 1692, 1268, 34, 34, 425, 5035, 759, 185, 34, 23, 185, 99, 63, 14, 14, 104, 136, 34, 732, 34, 271, 34, 34, 31, 68, 68, 68, 169, 68, 202, 68, 75, 36];
+          fac.items.forEach((it, idx) => {
+            it.activo = true;
+            it.cantidad = cantOficiales[idx] || it.cantidad;
+          });
           return;
         }
       }
@@ -1368,8 +1397,12 @@ Santa Teresita, 18000000
           }
         } else if (nit === '800229362' || nit === '800138259' || nomUpper.includes('VERBENAL') || nomUpper.includes('REFUGIO') || nomUpper.includes('VERVENAL')) {
           tipoCanasta = 'solo_carnes';
-        } else if (nit === '900244596' || nomUpper.includes('SIN BARRERA') || contraUpper.includes('SIN HUEVOS') || contraUpper.includes('NO FACTURAR HUEVOS')) {
-          tipoCanasta = 'sin_huevos';
+        } else if (nit === '900244596' || nomUpper.includes('SIN BARRERA')) {
+          if (contraUpper.includes('SIN HUEVOS') || contraUpper.includes('NO FACTURAR HUEVOS')) {
+            tipoCanasta = 'sin_huevos';
+          } else {
+            tipoCanasta = 'viveres_sin_barrera';
+          }
         } else if (nit === '901753677' || nomUpper.includes('APOSENTO')) {
           tipoCanasta = 'sin_arepas';
         } else {
@@ -1426,7 +1459,7 @@ Santa Teresita, 18000000
             ivaPct: it.ivaPct
           };
         });
-        origenTexto = tipoCanasta === 'solo_carnes' ? '🥩 Solo Carnes / Proteínas' : (tipoCanasta === 'sin_huevos' ? '🥚 Abarrotes Sin Huevos' : (tipoCanasta === 'sin_arepas' ? '🌽 Abarrotes Sin Arepas' : '🛒 Canasta 39 Ítems'));
+        origenTexto = tipoCanasta === 'viveres_sin_barrera' ? '🛒 Víveres Fundación Sin Barrera (39 Ítems Oficiales)' : (tipoCanasta === 'solo_carnes' ? '🥩 Solo Carnes / Proteínas' : (tipoCanasta === 'sin_huevos' ? '🥚 Abarrotes Sin Huevos' : (tipoCanasta === 'sin_arepas' ? '🌽 Abarrotes Sin Arepas' : '🛒 Canasta 39 Ítems')));
       }
 
       // Crear factura preliminar
